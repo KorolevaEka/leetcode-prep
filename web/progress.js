@@ -40,28 +40,47 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
       const carryRaw = storage.getItem(CARRY_KEY);
-      storage.removeItem(CARRY_KEY);
-      if (!session) return null;
+      if (!session) {
+        storage.removeItem(CARRY_KEY);
+        return null;
+      }
       user = { login: session.user.user_metadata?.user_name, id: session.user.id };
-      const { data: rows } = await supabase.from("progress").select("task_id, code, solved_at");
+      const { data: rows, error: selectError } = await supabase.from("progress").select("task_id, code, solved_at");
+      if (selectError) { state = "error"; return { login: user.login }; }
+      const server = new Map();
       for (const r of rows || []) {
+        server.set(r.task_id, r);
         if (r.solved_at) solved.add(r.task_id);
         if (r.code != null) drafts.set(r.task_id, r.code);
       }
       if (carryRaw) {
-        const carry = JSON.parse(carryRaw);
-        const now = new Date().toISOString();
-        const ids = new Set([...carry.solved, ...Object.keys(carry.drafts)]);
-        const payload = [...ids].filter(id => !solved.has(id) || !drafts.has(id)).map(id => {
-          const isSolved = carry.solved.includes(id);
-          return { task_id: id, code: carry.drafts[id] ?? null, updated_at: now, ...(isSolved ? { solved_at: now } : {}) };
-        });
-        if (payload.length) {
-          const { error } = await upsert(payload);
-          if (!error) for (const r of payload) {
-            if (r.solved_at) solved.add(r.task_id);
-            if (r.code != null) drafts.set(r.task_id, r.code);
-          } else state = "error";
+        let carry = null;
+        try { carry = JSON.parse(carryRaw); } catch { storage.removeItem(CARRY_KEY); }
+        if (carry) {
+          const now = new Date().toISOString();
+          const withSolved = [];
+          const codeOnly = [];
+          for (const id of new Set([...carry.solved, ...Object.keys(carry.drafts)])) {
+            const srv = server.get(id);
+            if (srv?.solved_at) continue;
+            if (carry.solved.includes(id)) {
+              withSolved.push({ task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now });
+            } else if (!srv) {
+              codeOnly.push({ task_id: id, code: carry.drafts[id], updated_at: now });
+            }
+          }
+          let failed = false;
+          for (const group of [withSolved, codeOnly]) {
+            if (!group.length) continue;
+            const { error } = await upsert(group);
+            if (error) { failed = true; continue; }
+            for (const r of group) {
+              if (r.solved_at) solved.add(r.task_id);
+              if (r.code != null) drafts.set(r.task_id, r.code);
+            }
+          }
+          if (failed) state = "error";
+          else storage.removeItem(CARRY_KEY);
         }
       }
       return { login: user.login };
