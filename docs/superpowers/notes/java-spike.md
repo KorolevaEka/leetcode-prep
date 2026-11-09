@@ -38,8 +38,11 @@ Warm total ~1.7-1.9 s per Run. Page reload with browser-cached runtime: first co
   compiled+ran normally. Results come back via `postMessage` (parent checks `e.source === iframe.contentWindow`).
   Cost: a new origin has its own cache, so the first run in it re-downloads the runtime (cold again, slower: ~8 s compile, ~2.7 s run observed in a hidden pane).
 - **Open problem for GitHub Pages:** the runner must live on a different *site* than the main page
-  (e.g. a second `*.github.io` repo/user, or a custom domain). `localhost` vs `127.0.0.1` was the stand-in. Same-site subdomains
-  (`a.example.com` / `b.example.com`) are the same site and would NOT isolate. Alternative if no second site: accept that
+  Only a different GitHub user/organization (`*.github.io` is a public suffix, so `<org>.github.io` is a different site)
+  or a different registrable/custom domain isolates. Another repo of the same user (`user.github.io/other-repo`) is the
+  same origin and site and does NOT isolate. `localhost` vs `127.0.0.1` was the stand-in. Same-site subdomains
+  (`a.example.com` / `b.example.com`) are expected NOT to isolate per Chrome site-isolation rules (untested here).
+  Alternative if no second site: accept that
   an infinite loop hangs the tab (user closes it) or add a static pre-check; decide in Task 5.
 
 ## Gotchas
