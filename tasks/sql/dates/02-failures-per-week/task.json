@@ -1,0 +1,17 @@
+{
+  "title": "Падения по неделям",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "date_trunc('week', ...)",
+    "::date",
+    "GROUP BY",
+    "COUNT(*)"
+  ],
+  "mutants": {
+    "trunc-month": "date_trunc('month') группирует по месяцам, а не по неделям",
+    "trunc-day": "date_trunc('day') считает по дням",
+    "no-status-filter": "не фильтрует по статусу: считает и прошедшие",
+    "week-number": "EXTRACT(week) возвращает номер недели, а не дату понедельника"
+  }
+}

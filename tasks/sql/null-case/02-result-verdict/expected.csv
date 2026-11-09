@@ -1,0 +1,9 @@
+test_result_id,verdict
+1,stable
+2,flaky
+3,stable
+4,broken
+5,broken
+6,skipped
+7,unknown
+8,flaky

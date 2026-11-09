@@ -1,0 +1,9 @@
+suite,name,duration_ms
+auth,login,1200
+auth,register,900
+auth,logout,900
+cart,checkout,2500
+cart,add,700
+reports,export,3000
+reports,import,3000
+search,basic,150

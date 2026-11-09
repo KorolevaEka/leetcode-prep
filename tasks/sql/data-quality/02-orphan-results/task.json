@@ -1,0 +1,15 @@
+{
+  "title": "Результаты без прогона",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "LEFT JOIN ... IS NULL",
+    "или NOT EXISTS",
+    "NULL не считается битой ссылкой"
+  ],
+  "mutants": {
+    "includes-null": "не исключает пустой test_run_id: NULL тоже попадает в сироты",
+    "inner-join": "INNER JOIN возвращает как раз результаты с существующим прогоном",
+    "wrong-key": "сверяет test_run_id с идентификатором самого результата"
+  }
+}

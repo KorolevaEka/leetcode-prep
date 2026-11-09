@@ -1,0 +1,1 @@
+SELECT severity, COUNT(closed_at) AS closed, ROUND(AVG(EXTRACT(EPOCH FROM closed_at - opened_at) / 3600)::numeric, 1) AS avg_hours, COUNT(*) FILTER (WHERE closed_at - opened_at > INTERVAL '48 hours') AS sla_breaches FROM defects GROUP BY severity;

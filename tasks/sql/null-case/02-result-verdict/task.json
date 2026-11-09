@@ -1,0 +1,16 @@
+{
+  "title": "Вердикт по результату",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "CASE WHEN ... THEN ... ELSE ... END",
+    "порядок условий",
+    "NULL в условиях"
+  ],
+  "mutants": {
+    "wrong-order": "ветка stable стоит раньше flaky: нестабильные никогда не определяются",
+    "no-else": "без ELSE результат без статуса получает NULL вместо unknown",
+    "null-is-flaky": "retries IS DISTINCT FROM 0 считает NULL повторами и объявляет flaky",
+    "any-retries": "retries >= 0 делает flaky любой прошедший результат с заполненным retries"
+  }
+}

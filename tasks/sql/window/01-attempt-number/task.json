@@ -1,0 +1,15 @@
+{
+  "title": "Номер попытки теста",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "ROW_NUMBER() OVER",
+    "PARTITION BY",
+    "ORDER BY внутри OVER"
+  ],
+  "mutants": {
+    "no-partition": "без PARTITION BY нумерация сквозная по всей таблице",
+    "desc-order": "сортировка по убыванию: нумерует от последнего запуска",
+    "order-by-id": "нумерует по id результата, а не по времени"
+  }
+}

@@ -1,0 +1,1 @@
+SELECT suite, COUNT(*) FILTER (WHERE status IN ('passed', 'failed')) AS executed, COALESCE(ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'passed') / NULLIF(COUNT(*) FILTER (WHERE status IN ('passed', 'failed')), 0), 1), 0) AS pass_rate FROM test_results GROUP BY suite;

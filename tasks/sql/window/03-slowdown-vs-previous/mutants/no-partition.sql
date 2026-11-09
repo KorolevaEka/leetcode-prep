@@ -1,0 +1,1 @@
+SELECT name, version, prev_ms, duration_ms FROM (SELECT c.name, b.version, r.duration_ms, LAG(r.duration_ms) OVER (ORDER BY b.built_on, r.test_case_id) AS prev_ms FROM test_results r JOIN builds b ON b.build_id = r.build_id JOIN test_cases c ON c.test_case_id = r.test_case_id) x WHERE duration_ms > prev_ms * 1.5;

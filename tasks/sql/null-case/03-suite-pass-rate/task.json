@@ -1,0 +1,17 @@
+{
+  "title": "Процент прохождения по наборам",
+  "level": "hard",
+  "kind": "code",
+  "hints": [
+    "COUNT(*) FILTER (WHERE ...)",
+    "NULLIF(x, 0)",
+    "ROUND()",
+    "NULL как результат деления"
+  ],
+  "mutants": {
+    "no-nullif": "без NULLIF набор без выполненных тестов даёт деление на ноль",
+    "count-star": "executed = COUNT(*) считает и пропущенные, и без статуса",
+    "coalesce-zero": "COALESCE(..., 0) подменяет «нет данных» нулём",
+    "skipped-as-failed": "пропущенные тоже в знаменателе: делит passed на COUNT(*)"
+  }
+}

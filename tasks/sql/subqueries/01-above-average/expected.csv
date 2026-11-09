@@ -1,0 +1,4 @@
+test_name,duration_ms
+checkout,700
+export,800
+report,1000

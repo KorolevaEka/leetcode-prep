@@ -1,0 +1,16 @@
+{
+  "title": "Прогоны не на prod",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "IS DISTINCT FROM",
+    "IS NULL",
+    "трёхзначная логика NULL"
+  ],
+  "mutants": {
+    "not-equal": "<> 'prod' теряет прогоны с NULL: сравнение с NULL не истинно",
+    "only-null": "берёт только NULL, а прогоны на staging и qa теряет",
+    "equals-null": "env = NULL всегда не истинно: результат пуст",
+    "not-in": "NOT IN ('prod') тоже отбрасывает NULL"
+  }
+}

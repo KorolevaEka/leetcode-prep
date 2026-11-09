@@ -1,0 +1,16 @@
+{
+  "title": "Падения на prod без проверки на staging",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "EXISTS",
+    "NOT EXISTS",
+    "коррелированный подзапрос",
+    "NOT IN и NULL — ловушка"
+  ],
+  "mutants": {
+    "not-in-null": "NOT IN с подзапросом, где есть NULL, не вернёт ничего",
+    "no-staging-check": "забыл проверку на staging",
+    "no-failure-check": "не требует падения на prod: достаточно отсутствия staging"
+  }
+}

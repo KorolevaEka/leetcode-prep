@@ -1,0 +1,18 @@
+{
+  "title": "Нарушения SLA по дефектам",
+  "level": "hard",
+  "kind": "code",
+  "hints": [
+    "интервалы: closed_at - opened_at",
+    "EXTRACT(EPOCH FROM ...)",
+    "COALESCE для открытых",
+    "COUNT(*) FILTER (WHERE ...)",
+    "ROUND()"
+  ],
+  "mutants": {
+    "ignore-open": "открытые дефекты не считаются нарушением: сравнение с NULL ничего не даёт",
+    "boundary": ">= 48 часов засчитывает дефект ровно на границе SLA",
+    "whole-days": "берёт только целые дни интервала и умножает на 24, теряя часы",
+    "count-all": "closed = COUNT(*) считает и открытые дефекты"
+  }
+}

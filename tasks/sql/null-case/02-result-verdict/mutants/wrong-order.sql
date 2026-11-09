@@ -1,0 +1,1 @@
+SELECT test_result_id, CASE WHEN status = 'passed' THEN 'stable' WHEN status = 'passed' AND retries > 0 THEN 'flaky' WHEN status = 'failed' THEN 'broken' WHEN status = 'skipped' THEN 'skipped' ELSE 'unknown' END AS verdict FROM test_results;

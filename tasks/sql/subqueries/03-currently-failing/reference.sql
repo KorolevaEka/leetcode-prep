@@ -1,0 +1,1 @@
+WITH last AS (SELECT test_case_id, MAX(executed_at) AS at FROM test_results GROUP BY test_case_id) SELECT c.name FROM test_cases c JOIN last l ON l.test_case_id = c.test_case_id JOIN test_results r ON r.test_case_id = l.test_case_id AND r.executed_at = l.at WHERE r.status = 'failed';

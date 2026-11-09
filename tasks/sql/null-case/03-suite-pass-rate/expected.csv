@@ -1,0 +1,6 @@
+suite,executed,pass_rate
+auth,4,75.0
+cart,2,50.0
+legacy,0,
+reports,4,100.0
+search,2,0.0

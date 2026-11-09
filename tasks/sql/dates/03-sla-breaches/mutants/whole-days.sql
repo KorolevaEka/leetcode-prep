@@ -1,0 +1,1 @@
+SELECT severity, COUNT(closed_at) AS closed, ROUND(AVG(EXTRACT(DAY FROM closed_at - opened_at) * 24)::numeric, 1) AS avg_hours, COUNT(*) FILTER (WHERE COALESCE(closed_at, TIMESTAMP '2024-04-01 00:00') - opened_at > INTERVAL '48 hours') AS sla_breaches FROM defects GROUP BY severity;

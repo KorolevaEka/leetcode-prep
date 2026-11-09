@@ -1,0 +1,1 @@
+SELECT b.version FROM builds b WHERE EXISTS (SELECT 1 FROM test_runs r WHERE r.build_id = b.build_id AND r.env = 'prod' AND r.status = 'failed') AND b.build_id NOT IN (SELECT build_id FROM test_runs WHERE env = 'staging');

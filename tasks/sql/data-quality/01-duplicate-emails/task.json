@@ -1,0 +1,15 @@
+{
+  "title": "Дубли в тестовых пользователях",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "GROUP BY",
+    "HAVING COUNT(*) > 1",
+    "lower()"
+  ],
+  "mutants": {
+    "case-sensitive": "не приводит регистр: QA.Bot и qa.bot считаются разными адресами",
+    "having-ge-one": "HAVING COUNT(*) >= 1 выводит вообще все адреса",
+    "distinct-count": "COUNT(DISTINCT email) считает уникальные написания, дубль не находится"
+  }
+}
