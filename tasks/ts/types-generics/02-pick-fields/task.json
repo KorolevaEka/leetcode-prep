@@ -1,0 +1,17 @@
+{
+  "title": "Выбор полей объекта",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "K extends keyof T",
+    "Pick<T, K>",
+    "Object.hasOwn",
+    "приведение `{} as Pick<T, K>`"
+  ],
+  "mutants": {
+    "loose-signature": "ключи — просто string[]: опечатка в названии поля не ловится компилятором",
+    "adds-undefined": "отсутствующие поля попадают в результат со значением undefined",
+    "mutates-source": "удаляет лишние поля из исходного объекта",
+    "returns-same": "возвращает исходный объект целиком"
+  }
+}

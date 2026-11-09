@@ -1,0 +1,16 @@
+{
+  "title": "Подсчёт тегов",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "Map и get/set",
+    "trim, toLowerCase",
+    "Object.fromEntries"
+  ],
+  "mutants": {
+    "no-trim": "не обрезает пробелы: «smoke» и «smoke » считаются разными тегами",
+    "case-sensitive": "различает регистр: «Smoke» и «smoke» — разные теги",
+    "keeps-empty": "считает пустой тег (одни пробелы) как отдельный тег",
+    "plain-object": "ломается на тегах вроде «constructor»: счётчик лежит в обычном объекте"
+  }
+}

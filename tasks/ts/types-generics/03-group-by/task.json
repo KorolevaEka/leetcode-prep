@@ -1,0 +1,16 @@
+{
+  "title": "Группировка с точными типами",
+  "level": "hard",
+  "kind": "code",
+  "hints": [
+    "K extends string",
+    "Partial<Record<K, T[]>>",
+    "Map<K, T[]> и Object.fromEntries",
+    "функция-ключ (item: T) => K"
+  ],
+  "mutants": {
+    "wide-record": "результат — Record<string, T[]>: компилятор разрешает обращаться к любым ключам",
+    "last-wins": "в группе остаётся только последний элемент",
+    "plain-object": "ломается на ключах вроде «constructor»: группы лежат в обычном объекте"
+  }
+}
