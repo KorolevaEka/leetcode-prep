@@ -1,0 +1,4 @@
+env,results,distinct_cases,slowest_ms
+prod,5,3,1600
+qa,3,2,700
+staging,4,3,1200

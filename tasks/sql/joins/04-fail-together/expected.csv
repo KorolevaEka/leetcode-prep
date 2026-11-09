@@ -1,0 +1,3 @@
+name_a,name_b,runs_together
+checkout,search,2
+login,checkout,3

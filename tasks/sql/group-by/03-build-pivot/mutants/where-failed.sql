@@ -1,0 +1,1 @@
+SELECT b.version, COUNT(*) AS passed, COUNT(*) AS failed, 0 AS skipped, 0 AS pass_rate FROM builds b JOIN test_runs tr ON tr.build_id = b.build_id JOIN test_results r ON r.test_run_id = tr.test_run_id WHERE r.status = 'failed' GROUP BY b.build_id, b.version;

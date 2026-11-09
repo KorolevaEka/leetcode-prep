@@ -1,0 +1,16 @@
+{
+  "title": "Падения по сборкам, включая нулевые",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "LEFT JOIN",
+    "условие в ON",
+    "COUNT(колонка)",
+    "GROUP BY"
+  ],
+  "mutants": {
+    "where-filter": "статус в WHERE превращает LEFT JOIN в inner: сборки без падений пропадают",
+    "count-star": "COUNT(*) считает и пустые строки LEFT JOIN: нули превращаются в единицы",
+    "inner-join": "INNER JOIN теряет сборки без прогонов"
+  }
+}

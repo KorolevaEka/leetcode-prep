@@ -1,0 +1,19 @@
+{
+  "title": "Сводка статусов по сборкам",
+  "level": "hard",
+  "kind": "code",
+  "hints": [
+    "COUNT(*) FILTER (WHERE ...)",
+    "GROUP BY",
+    "HAVING",
+    "ROUND()",
+    "100.0 для дробного деления"
+  ],
+  "mutants": {
+    "where-failed": "WHERE status = 'failed' до группировки: passed и skipped всегда 0",
+    "count-case-else-zero": "COUNT(CASE ... ELSE 0 END) считает и нули: во всех колонках получается общее число результатов",
+    "rate-over-all": "процент считает от всех результатов, включая пропущенные",
+    "integer-rate": "целочисленное деление: 100 * passed / (passed + failed) теряет дробную часть",
+    "all-builds": "нет HAVING: в отчёт попадают сборки без падений"
+  }
+}

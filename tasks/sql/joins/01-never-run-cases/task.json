@@ -1,0 +1,15 @@
+{
+  "title": "Кейсы без запусков",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "LEFT JOIN",
+    "ON",
+    "IS NULL"
+  ],
+  "mutants": {
+    "inner-join": "INNER JOIN оставляет только кейсы с результатами",
+    "equals-null": "= NULL никогда не истинно, результат пуст",
+    "check-status": "проверяет status IS NULL: захватывает кейс, у которого есть результат без статуса"
+  }
+}

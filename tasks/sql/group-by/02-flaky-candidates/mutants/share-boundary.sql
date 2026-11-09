@@ -1,0 +1,1 @@
+SELECT c.name, COUNT(*) AS runs, COUNT(*) FILTER (WHERE r.status = 'failed') AS failed FROM test_cases c JOIN test_results r ON r.test_case_id = c.test_case_id GROUP BY c.test_case_id, c.name HAVING COUNT(*) >= 4 AND COUNT(*) FILTER (WHERE r.status = 'failed') * 4 >= COUNT(*);

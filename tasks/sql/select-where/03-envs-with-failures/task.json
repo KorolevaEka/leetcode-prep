@@ -1,0 +1,18 @@
+{
+  "title": "Окружения с падениями за неделю",
+  "level": "hard",
+  "kind": "code",
+  "hints": [
+    "DISTINCT",
+    "lower()",
+    "диапазон дат через >= и <",
+    "NOT IN"
+  ],
+  "mutants": {
+    "no-distinct": "без DISTINCT одно окружение выводится несколько раз",
+    "case-sensitive": "не приводит регистр: Staging и staging считаются разными",
+    "between-dates": "BETWEEN ... AND '2024-03-07' обрезает последний день по полуночи",
+    "inclusive-end": "<= '2024-03-08' захватывает прогон ровно в полночь 8 марта",
+    "no-exclusion": "забыл исключить local и dev"
+  }
+}

@@ -1,0 +1,1 @@
+SELECT b.version, COUNT(*) AS failed_count FROM builds b LEFT JOIN test_runs tr ON tr.build_id = b.build_id LEFT JOIN test_results r ON r.test_run_id = tr.test_run_id AND r.status = 'failed' GROUP BY b.build_id, b.version;

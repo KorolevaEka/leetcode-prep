@@ -1,0 +1,16 @@
+{
+  "title": "Сводка по окружениям",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "GROUP BY",
+    "COUNT(*)",
+    "COUNT(DISTINCT ...)",
+    "MAX()"
+  ],
+  "mutants": {
+    "min-instead-of-max": "MIN вместо MAX: показывает самый быстрый результат",
+    "no-distinct": "COUNT(test_case_id) без DISTINCT: повторные запуски считаются разными кейсами",
+    "distinct-results": "results считает COUNT(DISTINCT test_case_id): повторы теряются"
+  }
+}

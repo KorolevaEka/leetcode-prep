@@ -1,0 +1,4 @@
+version,passed,failed,skipped,pass_rate
+3.0.0,6,1,1,85.7
+3.1.0,1,3,1,25.0
+3.1.1,7,1,2,87.5

@@ -43,9 +43,44 @@
   ],
   "sql": [
     {
+      "id": "select-where",
+      "title": "SELECT и фильтрация",
+      "description": "Выборка столбцов и условия WHERE: сравнения, LIKE, диапазоны и скобки."
+    },
+    {
       "id": "joins",
       "title": "JOIN",
-      "description": "Соединение таблиц: INNER, LEFT и условия соединения."
+      "description": "Соединение таблиц: INNER и LEFT, условия соединения, анти-JOIN и самосоединение."
+    },
+    {
+      "id": "group-by",
+      "title": "Агрегаты и GROUP BY / HAVING",
+      "description": "Подсчёты, группировка, условные агрегаты и фильтрация групп."
+    },
+    {
+      "id": "subqueries",
+      "title": "Подзапросы и CTE",
+      "description": "Скалярные подзапросы, EXISTS / NOT EXISTS и WITH."
+    },
+    {
+      "id": "window",
+      "title": "Оконные функции",
+      "description": "ROW_NUMBER, RANK, LAG и PARTITION BY."
+    },
+    {
+      "id": "dates",
+      "title": "Даты и время",
+      "description": "Диапазоны по времени, date_trunc, интервалы и разница дат."
+    },
+    {
+      "id": "null-case",
+      "title": "NULL и CASE",
+      "description": "Трёхзначная логика, IS DISTINCT FROM, COALESCE, NULLIF и CASE."
+    },
+    {
+      "id": "data-quality",
+      "title": "Проверка данных: дубликаты, пропуски, аномалии",
+      "description": "Поиск дублей, осиротевших ссылок и записей на чистку."
     }
   ],
   "ts": [

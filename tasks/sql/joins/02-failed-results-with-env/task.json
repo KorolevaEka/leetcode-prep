@@ -1,0 +1,16 @@
+{
+  "title": "Упавшие результаты с версией и окружением",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "JOIN",
+    "ON",
+    "WHERE",
+    "алиасы таблиц"
+  ],
+  "mutants": {
+    "no-status-filter": "не фильтрует по статусу, выводит и успешные",
+    "wrong-join-key": "соединяет прогон по id результата, а не по test_run_id",
+    "swapped-columns": "колонки env и version в неверном порядке"
+  }
+}

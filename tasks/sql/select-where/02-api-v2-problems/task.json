@@ -1,0 +1,17 @@
+{
+  "title": "Проблемные запросы API v2",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "WHERE",
+    "LIKE",
+    "скобки в AND/OR",
+    "операторы сравнения"
+  ],
+  "mutants": {
+    "no-parentheses": "без скобок: OR отрывает условие по задержке от проверки версии",
+    "like-without-slash": "LIKE '/api/v2%' цепляет и /api/v20",
+    "strict-500": "status_code > 500 теряет ответы ровно 500",
+    "latency-boundary": ">= 1500 захватывает запрос ровно на границе"
+  }
+}

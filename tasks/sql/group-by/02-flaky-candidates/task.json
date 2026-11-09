@@ -1,0 +1,17 @@
+{
+  "title": "Кандидаты в нестабильные",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "GROUP BY",
+    "HAVING",
+    "COUNT(*) FILTER (WHERE ...)",
+    "кейс не должен считаться по одному запуску"
+  ],
+  "mutants": {
+    "min-runs-three": "порог запусков >= 3 пускает кейс с тремя запусками",
+    "share-boundary": ">= 25% пускает кейс ровно на границе",
+    "integer-division": "целочисленное деление failed / runs даёт 0 или 1",
+    "where-filter": "WHERE status = 'failed' до группировки: runs считает только упавшие"
+  }
+}

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { execute } from "../scripts/executors/sql.mjs";
 
-const dir = "tasks/sql/joins/01-combine-two-tables/";
+const dir = "tasks/sql/joins/01-never-run-cases/";
 const read = n => readFileSync(dir + n, "utf8");
 const task = { kind: "code", schema: read("schema.sql"), expected: read("expected.csv") };
 

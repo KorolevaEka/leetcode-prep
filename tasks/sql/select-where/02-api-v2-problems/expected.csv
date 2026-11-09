@@ -1,0 +1,4 @@
+api_request_id,path,status_code,latency_ms
+2,/api/v2/users,500,80
+3,/api/v2/orders,200,1800
+8,/api/v2/search,502,2200
