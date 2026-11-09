@@ -35,6 +35,8 @@ docker compose exec db psql -U postgres   # psql
   `solution.py` — только сигнатура и `pass`, `test_solution.py` — pytest с примерами из условия + краевыми случаями.
 - **sql/**: `README.md`, `schema.sql` (начинается с `DROP SCHEMA IF EXISTS t CASCADE; CREATE SCHEMA t; SET search_path = t;`,
   имена в snake_case), пустой `solution.sql`, `expected.csv` с заголовком (формат `psql --csv`, NULL — пустое поле).
+  По `schema.sql` сайт рисует схему таблиц: объявляй `PRIMARY KEY`, а `REFERENCES` — если данные ему соответствуют.
+  Колонки-ссылки называй `<таблица>_id` (`customer_id` → `customers`): тогда связь дорисуется пунктиром и без FK.
 
 Перед выдачей проверь, что тест/expected корректны: временно реши задачу сам, прогони `./run`, верни заготовку.
 Решение не подсказывай, пока не попросят. Новую папку открой в редакторе: `idea <путь к solution>`.
