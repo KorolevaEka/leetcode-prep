@@ -4,7 +4,7 @@
   "kind": "code",
   "hints": [
     "COUNT(*) FILTER (WHERE ...)",
-    "NULLIF(x, 0)",
+    "защита от деления на ноль",
     "ROUND()",
     "NULL как результат деления"
   ],

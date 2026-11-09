@@ -4,9 +4,8 @@
   "kind": "code",
   "hints": [
     "GROUP BY",
-    "HAVING",
-    "COUNT(*) FILTER (WHERE ...)",
-    "кейс не должен считаться по одному запуску"
+    "HAVING по числу запусков",
+    "COUNT(*) FILTER (WHERE ...)"
   ],
   "mutants": {
     "min-runs-three": "порог запусков >= 3 пускает кейс с тремя запусками",

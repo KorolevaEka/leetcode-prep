@@ -9,8 +9,11 @@
 ## Пример
 
 ```
-path           status_code latency_ms          api_request_id
-/api/v2/users  500         80           ->     (эта строка)
-/api/v2/users  200         120                 (нет: всё в порядке)
-/health        200         5000                (нет: не v2)
+id  path            status_code  latency_ms  попадает?
+1   /api/v2/users   500          80          да (код 500+)
+2   /api/v2/users   200          120         нет (всё в порядке)
+3   /health         200          5000        нет (не v2)
+4   /api/v2/orders  200          1800        да (медленный)
+
+Результат: строки 1 и 4
 ```
