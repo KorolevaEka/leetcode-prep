@@ -3,7 +3,8 @@ from solution import min_run_time
 
 
 @pytest.mark.parametrize("durations, runners, expected", [
-    ([7, 2, 5, 10, 8], 2, 18),
+    ([4, 9, 3, 6, 2], 3, 11),
+    ([6, 3, 8, 2, 2, 5], 2, 17),
     ([1, 2, 3, 4], 4, 4),
     ([5, 5, 5], 1, 15),
     ([4], 3, 4),

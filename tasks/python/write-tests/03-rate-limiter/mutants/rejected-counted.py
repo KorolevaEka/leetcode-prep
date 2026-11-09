@@ -1,4 +1,6 @@
 class RateLimiter:
+    """Не больше `limit` запросов на ключ за скользящее окно в `window` секунд."""
+
     def __init__(self, limit: int, window: float):
         self.limit = limit
         self.window = window
