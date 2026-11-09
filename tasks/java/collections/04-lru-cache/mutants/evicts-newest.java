@@ -26,9 +26,9 @@ public class Solution {
             entries.put(key, value);
             if (entries.size() > capacity) {
                 K eldest = null;
-            for (K k : entries.keySet()) {
-                eldest = k;
-            }
+                for (K k : entries.keySet()) {
+                    eldest = k;
+                }
                 entries.remove(eldest);
             }
         }

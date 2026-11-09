@@ -20,7 +20,7 @@ class SolutionTest {
     @DisplayName("вхождение в самом конце")
     void atEnd() {
         assertEquals(List.of(3), Solution.findAll("abcxyz", "xyz"));
-        assertEquals(List.of(2), Solution.findAll("abc", "c").subList(0, 1));
+        assertEquals(List.of(2), Solution.findAll("abc", "c"));
     }
 
     @Test
