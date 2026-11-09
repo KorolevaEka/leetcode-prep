@@ -3,7 +3,7 @@
 // (sleep, wait) — таймер: iframe удаляется вместе с рантаймом, следующий запуск создаёт новый.
 import { guard } from "./java-guard.js";
 
-const HARNESS = ["TestRunner.java", "__LCT.java", "org/junit/jupiter/api/Test.java", "org/junit/jupiter/api/DisplayName.java",
+const HARNESS = ["TestRunner.java", "__LCT.java", "org/junit/jupiter/api/Test.java", "org/junit/jupiter/api/DisplayName.java", "org/junit/jupiter/api/BeforeEach.java",
   "org/junit/jupiter/api/Assertions.java", "org/junit/jupiter/api/function/Executable.java"];
 const TIMEOUT = "Таймаут: решение работает слишком долго (бесконечный цикл?)";
 let frame = null, ready = false, pending = null, harness = null;
@@ -56,7 +56,7 @@ function get() {
   return f;
 }
 
-addEventListener("pagehide", () => frame?.remove());
+addEventListener("pagehide", () => { frame?.remove(); frame = null; ready = false; });
 
 export const warmup = get;
 export const isReady = () => ready;

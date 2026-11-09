@@ -88,3 +88,66 @@ test("1 MB of output is truncated", async () => {
   const r = await check(task, SOL, () => run(SOL, tests('System.out.print("x".repeat(1024 * 1024));')));
   assert.match(r.output, /…вывод обрезан/);
 });
+
+test("@BeforeEach runs before each @Test on the same instance", async () => {
+  const r = await run(SOL, `import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+class SolutionTest {
+  int n;
+  @BeforeEach void setUp() { n = 10; }
+  @Test void a() { assertEquals(10, n); n++; }
+  @Test void b() { assertEquals(10, n); }
+}`);
+  assert.equal(r.passed, true, r.output);
+  assert.match(r.output, /Tests: 2 passed/);
+});
+
+test("assertAll reports every failure; assertSame/assertNotSame; assertIterableEquals", async () => {
+  const r = await run(SOL, tests(`
+    assertAll(() -> assertEquals(1, 1), () -> assertTrue(true));
+    assertAll("g", () -> {}, () -> {});
+    Object o = new Object(); assertSame(o, o); assertNotSame(o, new Object());
+    assertIterableEquals(java.util.List.of(1, 2), new java.util.ArrayList<>(java.util.List.of(1, 2)));
+    assertIterableEquals(java.util.List.of(java.util.List.of(1)), java.util.List.of(java.util.List.of(1)));`));
+  assert.equal(r.passed, true, r.output);
+  const bad = await run(SOL, `import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class SolutionTest {
+  @Test void a() { assertAll(() -> assertEquals(1, 2), () -> assertEquals(3, 4)); }
+  @Test void b() { assertSame("x", new String("x")); }
+  @Test void c() { Object o = new Object(); assertNotSame(o, o); }
+  @Test void d() { assertIterableEquals(java.util.List.of(1, 2), java.util.List.of(1, 3)); }
+  @Test void e() { assertIterableEquals(java.util.List.of(1), java.util.List.of(1, 2)); }
+}`);
+  assert.equal(bad.passed, false);
+  assert.match(bad.output, /Multiple Failures \(2 failures\)/);
+  assert.match(bad.output, /expected: <1> but was: <2>/);
+  assert.match(bad.output, /expected: <3> but was: <4>/);
+  assert.match(bad.output, /expected: same:/);
+  assert.match(bad.output, /expected: not same but was:/);
+  assert.match(bad.output, /iterable contents differ at index \[1\], expected: <2> but was: <3>/);
+  assert.match(bad.output, /Iterable lengths differ, expected: <1> but was: <2>/);
+  assert.match(bad.output, /Tests: 5 failed, 0 passed/);
+});
+
+test("assertArrayEquals for char[], double[] (with delta), boolean[]", async () => {
+  const r = await run(SOL, tests(`
+    assertArrayEquals(new char[]{'a', 'b'}, new char[]{'a', 'b'});
+    assertArrayEquals(new double[]{1.0, 2.5}, new double[]{1.0, 2.5});
+    assertArrayEquals(new double[]{0.3}, new double[]{0.1 + 0.2}, 1e-9);
+    assertArrayEquals(new boolean[]{true, false}, new boolean[]{true, false});`));
+  assert.equal(r.passed, true, r.output);
+  const bad = await run(SOL, `import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class SolutionTest {
+  @Test void a() { assertArrayEquals(new char[]{'a'}, new char[]{'b'}); }
+  @Test void b() { assertArrayEquals(new double[]{1.0}, new double[]{1.5}, 0.1); }
+  @Test void c() { assertArrayEquals(new boolean[]{true}, new boolean[]{false}); }
+  @Test void d() { assertArrayEquals(new double[]{1.0}, new double[]{1.0, 2.0}); }
+}`);
+  assert.equal(bad.passed, false);
+  assert.match(bad.output, /array contents differ at index \[0\], expected: <a> but was: <b>/);
+  assert.match(bad.output, /array contents differ at index \[0\], expected: <1\.0> but was: <1\.5>/);
+  assert.match(bad.output, /expected: <true> but was: <false>/);
+  assert.match(bad.output, /array lengths differ/);
+});

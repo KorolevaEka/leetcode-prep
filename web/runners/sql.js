@@ -33,6 +33,7 @@ const toCsv = rows => rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${v.replace(
 export async function execute(task, code) {
   try {
     const d = await db();
+    try { await d.exec("ROLLBACK"); } catch {}
     await d.exec(task.schema);
     const results = await d.exec(code, { rowMode: "array" });
     const last = [...results].reverse().find(r => r.fields.length);

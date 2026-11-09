@@ -103,6 +103,24 @@ def test_rejects_mutant_without_description(root):
         load_tasks(root)
 
 
+@pytest.mark.parametrize("hints", ["подсказка", ["ok", ""], ["ok", 1], [None], {"a": "b"}])
+def test_rejects_malformed_hints(root, hints):
+    make_task(root, "python", "strings", "01-x", hints=hints)
+    with pytest.raises(TaskFormatError):
+        load_tasks(root)
+
+
+@pytest.mark.parametrize("mutants", [["a", "b"], "ab", {"a": "x", "b": None}, {"a": "x", "b": 5}])
+def test_rejects_malformed_mutants(root, mutants):
+    make_task(root, "python", "strings", "01-x", mutants={"a": "x", "b": "y"})
+    d = root / "tasks/python/strings/01-x"
+    meta = json.loads((d / "task.json").read_text())
+    meta["mutants"] = mutants
+    (d / "task.json").write_text(json.dumps(meta))
+    with pytest.raises(TaskFormatError):
+        load_tasks(root)
+
+
 def test_order_follows_topics_json(root):
     make_topics(root, {"python": [{"id": "z", "title": "Z", "description": "d"},
                                   {"id": "a", "title": "A", "description": "d"}]})

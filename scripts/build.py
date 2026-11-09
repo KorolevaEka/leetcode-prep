@@ -40,11 +40,16 @@ def _load_task(d: Path, lang: str, topic: str, topic_ids: set) -> dict:
         raise TaskFormatError(d, f"kind «{meta['kind']}»: ждём code | tests")
     if lang == "sql" and meta["kind"] != "code":
         raise TaskFormatError(d, "у sql только kind=code")
+    hints = meta["hints"]
+    if not isinstance(hints, list) or not all(isinstance(h, str) and h.strip() for h in hints):
+        raise TaskFormatError(d, "hints: ждём список непустых строк")
     mutants = meta["mutants"]
+    if not isinstance(mutants, dict):
+        raise TaskFormatError(d, "mutants: ждём объект {имя: описание}")
     if len(mutants) < 2:
         raise TaskFormatError(d, "нужно минимум 2 мутанта")
     for name, desc in mutants.items():
-        if not str(desc).strip():
+        if not isinstance(desc, str) or not desc.strip():
             raise TaskFormatError(d, f"у мутанта «{name}» нет описания")
     rec = {
         "id": f"{lang}/{topic}/{d.name}", "lang": lang, "topic": topic, "order": int(num),

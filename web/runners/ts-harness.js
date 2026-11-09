@@ -45,6 +45,18 @@ const MATCHERS = {
   toHaveLength: (a, n) => same(a?.length === n, `length ${n}`, `length ${a?.length}: ${fmt(a)}`),
   toBeGreaterThan: (a, n) => same(a > n, `> ${fmt(n)}`, fmt(a)),
   toBeLessThan: (a, n) => same(a < n, `< ${fmt(n)}`, fmt(a)),
+  toBeGreaterThanOrEqual: (a, n) => same(a >= n, `>= ${fmt(n)}`, fmt(a)),
+  toBeLessThanOrEqual: (a, n) => same(a <= n, `<= ${fmt(n)}`, fmt(a)),
+  toHaveProperty(a, path, ...value) {
+    const keys = Array.isArray(path) ? path : String(path).replace(/\[(\w+)\]/g, ".$1").split(".").filter(Boolean);
+    let cur = a, found = true;
+    for (const k of keys) {
+      if (cur == null || !(k in Object(cur))) { found = false; break; }
+      cur = cur[k];
+    }
+    const what = `property ${fmt(keys.join("."))}` + (value.length ? ` with value ${fmt(value[0])}` : "");
+    return same(found && (!value.length || eq(cur, value[0], false)), what, found ? `${fmt(keys.join("."))}: ${fmt(cur)}` : `no such property in ${fmt(a)}`);
+  },
   toBeCloseTo: (a, n, d = 2) => same(Math.abs(a - n) < 10 ** -d / 2, `${fmt(n)} (±${10 ** -d / 2})`, fmt(a)),
   toMatch: (a, e) => same(typeof a === "string" && (typeof e === "string" ? a.includes(e) : e.test(a)), fmt(e instanceof RegExp ? String(e) : e), fmt(a)),
   toThrow(a, e) {
@@ -61,6 +73,8 @@ const MATCHERS = {
   },
 };
 
+MATCHERS.toThrowError = MATCHERS.toThrow;
+
 class AssertionError extends Error {}
 
 function build(getActual, negate, isAsync, fromRejection) {
@@ -68,7 +82,7 @@ function build(getActual, negate, isAsync, fromRejection) {
   for (const [name, fn] of Object.entries(MATCHERS)) {
     o[name] = (...args) => {
       const run = actual => {
-        if (fromRejection && name === "toThrow") { const v = actual; actual = () => { throw v; }; }
+        if (fromRejection && name.startsWith("toThrow")) { const v = actual; actual = () => { throw v; }; }
         const { pass, expected, received } = fn(actual, ...args);
         if (pass === negate) {
           throw new AssertionError(`expect(received).${negate ? "not." : ""}${name}(…)\n\nExpected: ${negate ? "not " : ""}${expected}\nReceived: ${received}`);
@@ -94,11 +108,17 @@ export async function runTests(js) {
   const out = []; let size = 0;
   const push = s => { if (size < CAP) { out.push(s); size += s.length; } };
   const tests = []; let prefix = [];
+  let suite = { before: [], after: [], parent: null };
   const g = globalThis, saved = {};
   const globals = {
     expect,
-    describe(name, fn) { prefix.push(name); try { fn(); } finally { prefix.pop(); } },
-    test(name, fn) { tests.push({ name: [...prefix, name].join(" > "), fn }); },
+    describe(name, fn) {
+      prefix.push(name); suite = { before: [], after: [], parent: suite };
+      try { fn(); } finally { prefix.pop(); suite = suite.parent; }
+    },
+    test(name, fn) { tests.push({ name: [...prefix, name].join(" > "), fn, suite }); },
+    beforeEach(fn) { suite.before.push(fn); },
+    afterEach(fn) { suite.after.push(fn); },
   };
   globals.it = globals.test;
   const log = (...a) => push(a.map(x => typeof x === "string" ? x : fmt(x)).join(" "));
@@ -123,8 +143,19 @@ export async function runTests(js) {
     try { load("./solution.test"); }
     catch (e) { push(`Ошибка при загрузке: ${e?.name}: ${e?.message}`); failed++; }
     for (const t of tests) {
-      try { await t.fn(); passed++; push(`✓ ${t.name}`); }
-      catch (e) {
+      const chain = [];
+      for (let s = t.suite; s; s = s.parent) chain.unshift(s);
+      let err = null;
+      try {
+        for (const s of chain) for (const h of s.before) await h();
+        await t.fn();
+      } catch (e) { err = { e }; }
+      for (const s of chain.reverse()) for (const h of s.after) {
+        try { await h(); } catch (e) { err ??= { e }; }
+      }
+      if (!err) { passed++; push(`✓ ${t.name}`); }
+      else {
+        const e = err.e;
         failed++;
         const body = e instanceof AssertionError ? e.message : `${e?.name ?? "Error"}: ${e?.message ?? e}`;
         push(`✕ ${t.name}\n` + body.replace(/^/gm, "    "));

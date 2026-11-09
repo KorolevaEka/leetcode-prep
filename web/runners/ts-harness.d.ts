@@ -11,8 +11,12 @@ interface Matchers<R> {
   toHaveLength(length: number): R;
   toBeGreaterThan(n: number): R;
   toBeLessThan(n: number): R;
+  toBeGreaterThanOrEqual(n: number): R;
+  toBeLessThanOrEqual(n: number): R;
+  toHaveProperty(path: string | readonly string[], value?: unknown): R;
   toBeCloseTo(n: number, digits?: number): R;
   toThrow(expected?: string | RegExp | Error | (new (...args: any[]) => unknown)): R;
+  toThrowError(expected?: string | RegExp | Error | (new (...args: any[]) => unknown)): R;
   toMatch(expected: string | RegExp): R;
 }
 interface Expectation extends Matchers<void> {
@@ -23,6 +27,8 @@ interface Expectation extends Matchers<void> {
 declare function expect(actual: unknown): Expectation;
 declare function describe(name: string, fn: () => void): void;
 declare function test(name: string, fn: () => void | Promise<void>): void;
+declare function beforeEach(fn: () => void | Promise<void>): void;
+declare function afterEach(fn: () => void | Promise<void>): void;
 declare function it(name: string, fn: () => void | Promise<void>): void;
 declare const console: {
   log(...args: unknown[]): void;

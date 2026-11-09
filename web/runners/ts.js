@@ -28,7 +28,9 @@ function get() {
       const p = pending; pending = null;
       p.resolve(data);
     };
-    w.onerror = e => fail(w, "Не удалось загрузить TypeScript: " + (e.message || "ошибка загрузки воркера"));
+    w.onerror = e => fail(w, ready
+      ? "Ошибка выполнения: " + (e.message || "необработанное исключение")
+      : "Не удалось загрузить TypeScript: " + (e.message || "ошибка загрузки воркера"));
   }
   return worker;
 }

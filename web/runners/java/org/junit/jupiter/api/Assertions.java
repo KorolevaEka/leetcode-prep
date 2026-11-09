@@ -1,6 +1,9 @@
 package org.junit.jupiter.api;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.function.Executable;
 
@@ -70,8 +73,83 @@ public final class Assertions {
             }
         }
     }
+    public static void assertArrayEquals(char[] expected, char[] actual) { assertArrayEquals(box(expected), box(actual), null); }
+    public static void assertArrayEquals(char[] expected, char[] actual, String message) { assertArrayEquals(box(expected), box(actual), message); }
+    public static void assertArrayEquals(boolean[] expected, boolean[] actual) { assertArrayEquals(box(expected), box(actual), null); }
+    public static void assertArrayEquals(boolean[] expected, boolean[] actual, String message) { assertArrayEquals(box(expected), box(actual), message); }
+    public static void assertArrayEquals(double[] expected, double[] actual) { assertArrayEquals(expected, actual, 0.0, null); }
+    public static void assertArrayEquals(double[] expected, double[] actual, String message) { assertArrayEquals(expected, actual, 0.0, message); }
+    public static void assertArrayEquals(double[] expected, double[] actual, double delta) { assertArrayEquals(expected, actual, delta, null); }
+    public static void assertArrayEquals(double[] expected, double[] actual, double delta, String message) {
+        if (expected == actual) return;
+        if (expected == null || actual == null) check(false, expected == null ? null : box(expected), actual == null ? null : box(actual), message);
+        if (expected.length != actual.length) {
+            throw new AssertionError(pre(message) + "array lengths differ, expected: <" + expected.length + "> but was: <" + actual.length + ">");
+        }
+        for (int i = 0; i < expected.length; i++) {
+            if (Double.compare(expected[i], actual[i]) != 0 && !(Math.abs(expected[i] - actual[i]) <= delta)) {
+                throw new AssertionError(pre(message) + "array contents differ at index [" + i + "], expected: " + fmt(expected[i]) + " but was: " + fmt(actual[i]));
+            }
+        }
+    }
+    private static Object[] box(char[] a) {
+        if (a == null) return null;
+        Object[] r = new Object[a.length];
+        for (int i = 0; i < a.length; i++) r[i] = a[i];
+        return r;
+    }
+    private static Object[] box(boolean[] a) {
+        if (a == null) return null;
+        Object[] r = new Object[a.length];
+        for (int i = 0; i < a.length; i++) r[i] = a[i];
+        return r;
+    }
+    private static Object[] box(double[] a) { return a == null ? null : Arrays.stream(a).boxed().toArray(); }
     private static Object[] box(int[] a) { return a == null ? null : Arrays.stream(a).boxed().toArray(); }
     private static Object[] box(long[] a) { return a == null ? null : Arrays.stream(a).boxed().toArray(); }
+
+    public static void assertSame(Object expected, Object actual) { assertSame(expected, actual, null); }
+    public static void assertSame(Object expected, Object actual, String message) {
+        if (expected != actual) throw new AssertionError(pre(message) + "expected: same: " + fmt(expected) + " was not: " + fmt(actual));
+    }
+    public static void assertNotSame(Object unexpected, Object actual) { assertNotSame(unexpected, actual, null); }
+    public static void assertNotSame(Object unexpected, Object actual, String message) {
+        if (unexpected == actual) throw new AssertionError(pre(message) + "expected: not same but was: " + fmt(actual));
+    }
+
+    public static void assertIterableEquals(Iterable<?> expected, Iterable<?> actual) { assertIterableEquals(expected, actual, null); }
+    public static void assertIterableEquals(Iterable<?> expected, Iterable<?> actual, String message) {
+        if (expected == actual) return;
+        if (expected == null || actual == null) check(false, expected, actual, message);
+        Iterator<?> e = expected.iterator(), a = actual.iterator();
+        int i = 0;
+        while (e.hasNext() && a.hasNext()) {
+            Object x = e.next(), y = a.next();
+            if (!Objects.deepEquals(x, y)) {
+                throw new AssertionError(pre(message) + "iterable contents differ at index [" + i + "], expected: " + fmt(x) + " but was: " + fmt(y));
+            }
+            i++;
+        }
+        if (e.hasNext() || a.hasNext()) {
+            int en = i, an = i;
+            while (e.hasNext()) { e.next(); en++; }
+            while (a.hasNext()) { a.next(); an++; }
+            throw new AssertionError(pre(message) + "Iterable lengths differ, expected: <" + en + "> but was: <" + an + ">");
+        }
+    }
+
+    public static void assertAll(Executable... executables) { assertAll(null, executables); }
+    public static void assertAll(String heading, Executable... executables) {
+        List<Throwable> failures = new ArrayList<>();
+        for (Executable ex : executables) {
+            try { ex.execute(); } catch (Throwable t) { failures.add(t); }
+        }
+        if (failures.isEmpty()) return;
+        StringBuilder sb = new StringBuilder(heading == null || heading.isEmpty() ? "Multiple Failures" : heading)
+            .append(" (").append(failures.size()).append(failures.size() == 1 ? " failure)" : " failures)");
+        for (Throwable t : failures) sb.append("\n\t").append(t instanceof AssertionError ? t.getMessage() : t.toString());
+        throw new AssertionError(sb.toString());
+    }
 
     public static <T extends Throwable> T assertThrows(Class<T> expectedType, Executable executable) { return assertThrows(expectedType, executable, null); }
     public static <T extends Throwable> T assertThrows(Class<T> expectedType, Executable executable, String message) {

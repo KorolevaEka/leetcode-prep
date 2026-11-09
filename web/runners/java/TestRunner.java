@@ -5,6 +5,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,8 +22,12 @@ public class TestRunner {
             System.exit(5);
             return;
         }
-        List<Method> tests = new ArrayList<>();
-        for (Method m : cls.getDeclaredMethods()) if (m.isAnnotationPresent(Test.class)) tests.add(m);
+        List<Method> tests = new ArrayList<>(), before = new ArrayList<>();
+        for (Method m : cls.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(Test.class)) tests.add(m);
+            if (m.isAnnotationPresent(BeforeEach.class)) before.add(m);
+        }
+        before.sort(Comparator.comparing(Method::getName));
         if (tests.isEmpty()) {
             System.out.println("No tests found");
             System.exit(5);
@@ -36,7 +41,12 @@ public class TestRunner {
             String name = dn != null ? dn.value() : m.getName();
             try {
                 m.setAccessible(true);
-                m.invoke(Modifier.isStatic(m.getModifiers()) ? null : ctor.newInstance());
+                Object self = ctor.newInstance();
+                for (Method b : before) {
+                    b.setAccessible(true);
+                    b.invoke(Modifier.isStatic(b.getModifiers()) ? null : self);
+                }
+                m.invoke(Modifier.isStatic(m.getModifiers()) ? null : self);
                 passed++;
                 System.out.println("✓ " + name);
             } catch (Throwable t) {

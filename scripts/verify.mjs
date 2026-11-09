@@ -25,7 +25,7 @@ for (const t of selected) {
   try { ({ execute } = await import(`./executors/${t.lang}.mjs`)); }
   catch (e) {
     if (e.code !== "ERR_MODULE_NOT_FOUND" || !String(e.message).includes(`executors/${t.lang}.mjs`)) throw e;
-    console.log(`SKIP ${t.id}: нет исполнителя для ${t.lang}`); continue;
+    bad++; console.log(`FAIL ${t.id}: нет исполнителя для ${t.lang}`); continue;
   }
   const dir = join(root, "tasks", t.id), ext = EXT[t.lang];
   const reference = readFileSync(join(dir, `reference.${ext}`), "utf8");

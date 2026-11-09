@@ -83,3 +83,32 @@ test("empty tests file reports noTests", async () => {
   assert.equal(r.passed, false);
   assert.equal(r.noTests, true);
 });
+
+test("beforeEach/afterEach run around every test, scoped to describe", async () => {
+  const r = await run("export const f = 1;", `
+    const log: string[] = [];
+    beforeEach(() => { log.push("b"); });
+    afterEach(() => { log.push("a"); });
+    describe("inner", () => { beforeEach(() => { log.push("ib"); }); test("one", () => { expect(log).toEqual(["b", "ib"]); }); });
+    test("two", () => { expect(log).toEqual(["b", "ib", "a", "b"]); });
+    test("three", () => { expect(log).toEqual(["b", "ib", "a", "b", "a", "b"]); });`);
+  assert.equal(r.passed, true, r.output);
+});
+
+test("toBeGreaterThanOrEqual, toBeLessThanOrEqual, toHaveProperty, toThrowError", async () => {
+  const r = await run("export const f = 1;", tests(`
+    expect(2).toBeGreaterThanOrEqual(2); expect(2).toBeLessThanOrEqual(2);
+    expect(1).not.toBeGreaterThanOrEqual(2); expect(3).not.toBeLessThanOrEqual(2);
+    const o = { a: { b: [1, { c: 5 }] }, u: undefined };
+    expect(o).toHaveProperty("a.b"); expect(o).toHaveProperty("a.b[1].c", 5); expect(o).toHaveProperty(["a", "b", "0"], 1);
+    expect(o).toHaveProperty("u"); expect(o).not.toHaveProperty("a.x"); expect(o).not.toHaveProperty("a.b[1].c", 6);
+    expect(() => { throw new Error("boom"); }).toThrowError("boom");
+    await expect(Promise.reject(new Error("x"))).rejects.toThrowError("x");`));
+  assert.equal(r.passed, true, r.output);
+});
+
+test("failing new matchers report Expected/Received", async () => {
+  const r = await run("export const f = 1;", tests('expect(1).toBeGreaterThanOrEqual(2); expect({}).toHaveProperty("a");'));
+  assert.equal(r.passed, false);
+  assert.match(r.output, /toBeGreaterThanOrEqual/);
+});

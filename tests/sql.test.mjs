@@ -23,3 +23,10 @@ test("syntax error returns postgres message", async () => {
   assert.equal(r.passed, false);
   assert.match(r.output, /syntax error/);
 });
+
+test("dangling BEGIN with an error does not poison the next run", async () => {
+  const r1 = await execute(task, "BEGIN; SELECT 1/0;");
+  assert.equal(r1.passed, false);
+  const r2 = await execute(task, read("reference.sql"));
+  assert.equal(r2.passed, true, r2.output);
+});
