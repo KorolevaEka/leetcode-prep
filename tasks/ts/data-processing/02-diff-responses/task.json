@@ -1,0 +1,16 @@
+{
+  "title": "Сравнение двух ответов API",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "Object.keys и Object.hasOwn",
+    "JSON.stringify для сравнения значений",
+    "sort()"
+  ],
+  "mutants": {
+    "strict-equality": "вложенные объекты с одинаковым содержимым считаются изменившимися",
+    "unsorted": "списки ключей не отсортированы",
+    "swapped": "added и removed перепутаны местами",
+    "null-as-missing": "поле со значением null считается отсутствующим"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Разбор URL на части",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "indexOf и slice",
+    "порядок разбора: сначала # , потом ?",
+    "Number(...) для порта"
+  ],
+  "mutants": {
+    "no-default-path": "если пути нет, возвращает пустую строку вместо «/»",
+    "hash-leaks-into-query": "если есть и query, и hash, фрагмент остаётся внутри query",
+    "port-stays-in-host": "порт остаётся в имени хоста, а поле port всегда null",
+    "keeps-delimiters": "query и hash возвращаются вместе с ведущими «?» и «#»"
+  }
+}
