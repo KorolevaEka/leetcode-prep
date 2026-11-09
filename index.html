@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeetCode prep</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e3e2de;
+    --accent: #3b5bdb; --ok: #2b8a3e; --ok-bg: #ebfbee; --err: #c92a2a; --err-bg: #fff5f5;
+    --code-bg: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --panel: #1f1f1d; --text: #ecebe7; --muted: #9a9993; --line: #33332f;
+      --accent: #748ffc; --ok: #69db7c; --ok-bg: #1b2b1f; --err: #ff8787; --err-bg: #2f1c1c;
+      --code-bg: #2a2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; }
+  aside { border-right: 1px solid var(--line); overflow-y: auto; padding: 16px 12px; }
+  aside h1 { font-size: 16px; margin: 0 8px 16px; }
+  aside h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+             color: var(--muted); margin: 16px 8px 6px; }
+  aside button { display: flex; gap: 8px; width: 100%; text-align: left; border: 0; background: none;
+                 color: inherit; font: inherit; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+  aside button:hover { background: var(--code-bg); }
+  aside button.active { background: var(--accent); color: #fff; }
+  aside .mark { width: 1em; flex: none; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); min-height: 0; }
+  .readme { overflow-y: auto; padding: 24px 28px; border-right: 1px solid var(--line); }
+  .readme h1 { font-size: 22px; margin-top: 0; }
+  .readme a { color: var(--accent); }
+  .readme code, .readme pre { background: var(--code-bg); border-radius: 4px;
+                              font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  .readme code { padding: 1px 4px; }
+  .readme pre { padding: 10px 12px; overflow-x: auto; }
+  .readme pre code { padding: 0; }
+  .work { display: flex; flex-direction: column; min-height: 0; padding: 16px; gap: 12px; }
+  .bar { display: flex; gap: 8px; align-items: center; }
+  .bar .file { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 13px; margin-right: auto; }
+  .bar button { font: inherit; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+                border: 1px solid var(--line); background: var(--panel); color: inherit; }
+  .bar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .bar button:disabled { opacity: .6; cursor: wait; }
+  textarea { flex: 1 1 60%; min-height: 200px; resize: none; padding: 12px; border-radius: 8px;
+             border: 1px solid var(--line); background: var(--panel); color: inherit; tab-size: 4;
+             font: 14px/1.5 ui-monospace, Menlo, monospace; outline-color: var(--accent); }
+  pre.out { flex: 1 1 40%; margin: 0; overflow: auto; padding: 12px; border-radius: 8px;
+            background: var(--panel); border: 1px solid var(--line); color: var(--muted);
+            font: 13px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+  pre.out.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+  pre.out.err { background: var(--err-bg); color: var(--err); border-color: var(--err); }
+  .empty { padding: 40px; color: var(--muted); }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    main { grid-template-columns: 1fr; }
+    .readme { border-right: 0; padding: 16px; }
+    textarea { min-height: 50vh; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside id="list"><h1>LeetCode prep</h1></aside>
+  <main id="main"><div class="empty">Выбери задачу слева</div></main>
+</div>
+<script>
+let tasks = [], current = null;
+const solved = (() => { try { return JSON.parse(localStorage.solved || "{}"); } catch { return {}; } })();
+const saveSolved = () => { try { localStorage.solved = JSON.stringify(solved); } catch {} };
+const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const md = s => window.marked ? marked.parse(s) : `<pre>${esc(s)}</pre>`;
+
+async function api(path, body) {
+  const r = await fetch(path, body && { method: "POST", body: JSON.stringify(body) });
+  return r.json();
+}
+
+function renderList() {
+  const list = document.getElementById("list");
+  list.innerHTML = "<h1>LeetCode prep</h1>";
+  for (const kind of ["python", "sql"]) {
+    const group = tasks.filter(t => t.kind === kind);
+    if (!group.length) continue;
+    list.insertAdjacentHTML("beforeend", `<h2>${kind === "python" ? "Python" : "SQL"}</h2>`);
+    for (const t of group) {
+      const b = document.createElement("button");
+      b.className = t.id === current?.id ? "active" : "";
+      b.innerHTML = `<span class="mark">${solved[t.id] ? "✓" : ""}</span><span>${esc(t.id.split("/")[1])}</span>`;
+      b.onclick = () => { location.hash = t.id; };
+      list.append(b);
+    }
+  }
+}
+
+function open(id) {
+  current = tasks.find(t => t.id === id);
+  renderList();
+  const main = document.getElementById("main");
+  if (!current) { main.innerHTML = '<div class="empty">Выбери задачу слева</div>'; return; }
+  const file = current.kind === "python" ? "solution.py" : "solution.sql";
+  main.innerHTML = `
+    <section class="readme">${md(current.readme)}</section>
+    <section class="work">
+      <div class="bar">
+        <span class="file">${esc(current.id)}/${file}</span>
+        <button id="save">Сохранить</button>
+        <button id="run" class="primary">Запустить ⌘↵</button>
+      </div>
+      <textarea id="code" spellcheck="false"></textarea>
+      <pre class="out" id="out">Вывод тестов появится здесь</pre>
+    </section>`;
+  const code = document.getElementById("code");
+  code.value = current.solution;
+  code.oninput = () => { current.solution = code.value; };
+  code.onkeydown = e => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(); }
+    else if (e.key === "s" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); }
+    else if (e.key === "Tab") { e.preventDefault(); code.setRangeText("    ", code.selectionStart, code.selectionEnd, "end"); current.solution = code.value; }
+  };
+  document.getElementById("run").onclick = run;
+  document.getElementById("save").onclick = save;
+  code.focus();
+}
+
+async function save() {
+  await api("/api/save", { id: current.id, code: current.solution });
+  const out = document.getElementById("out");
+  out.className = "out"; out.textContent = "Сохранено";
+}
+
+async function run() {
+  const btn = document.getElementById("run"), out = document.getElementById("out");
+  btn.disabled = true; out.className = "out"; out.textContent = "Запускаю…";
+  try {
+    const r = await api("/api/run", { id: current.id, code: current.solution });
+    out.className = "out " + (r.ok ? "ok" : "err");
+    out.textContent = r.output;
+    if (r.ok) { solved[current.id] = true; saveSolved(); renderList(); }
+  } catch (e) {
+    out.className = "out err"; out.textContent = "Сервер недоступен: " + e;
+  } finally { btn.disabled = false; }
+}
+
+window.onhashchange = () => open(decodeURIComponent(location.hash.slice(1)));
+api("/api/tasks").then(t => { tasks = t; window.onhashchange(); });
+</script>
+</body>
+</html>

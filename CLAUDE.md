@@ -6,12 +6,13 @@ Python и Postgres живут в docker-compose, папка проекта см�
 ## Окружение
 
 ```bash
-docker compose up -d --build   # один раз
+docker compose up -d --build   # один раз (и после правок Dockerfile/server.py)
+# веб-интерфейс: http://localhost:8000 — условие, редактор, кнопка «Запустить» (⌘↵)
 docker compose exec py bash    # терминал внутри python-контейнера
 docker compose exec db psql -U postgres   # psql
 ```
 
-## Проверка
+## Проверка (то же, что кнопка в интерфейсе; логика в check.py)
 
 ```bash
 ./run python/0001-two-sum

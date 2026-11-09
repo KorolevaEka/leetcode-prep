@@ -3,7 +3,14 @@ services:
     build: .
     volumes: [".:/work"]
     working_dir: /work
-    command: sleep infinity
+    command: python server.py
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
     depends_on: [db]
 
   db:
