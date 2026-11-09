@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>java spike</title>
+<pre id="console"></pre>
+<script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const out = () => document.getElementById('console');
+let inited = null;
+const init = () => inited ||= cheerpjInit({version: 21});
+// files: {'Name.java': source}; returns {compileExit, runExit, out, ms}
+window.compileRun = async function (files, mainClass, compiler = 'javac') {
+  const t0 = performance.now();
+  await init();
+  out().textContent = '';
+  const paths = [];
+  for (const [n, src] of Object.entries(files)) { cheerpOSAddStringFile('/str/' + n, src); paths.push('/str/' + n); }
+  const cp = compiler === 'javac' ? '/app/' : '/app/web/runners/java/ecj-3.33.0.jar';
+  const cls = compiler === 'javac' ? 'com.sun.tools.javac.Main' : 'org.eclipse.jdt.internal.compiler.batch.Main';
+  const args = compiler === 'javac' ? ['-d', '/files/out'] : ['-21', '-d', '/files/out'];
+  const compileExit = await cheerpjRunMain(cls, cp, ...args, ...paths);
+  const compileOut = out().textContent; out().textContent = '';
+  const t1 = performance.now();
+  if (compileExit !== 0) return {compileExit, compileOut, ms: t1 - t0};
+  const runExit = await cheerpjRunMain(mainClass, '/files/out/');
+  return {compileExit, runExit, out: out().textContent, msCompile: t1 - t0, msRun: performance.now() - t1};
+};
+const SOL = 'public class Solution { public static int add(int a,int b){return a+b;} }';
+const MAIN = 'public class Main { public static void main(String[] a){ System.out.println(Solution.add(2,3)); System.exit(Solution.add(2,3)==5?0:1);} }';
+const LOOP = 'public class Main { public static void main(String[] a){ while(true){} } }';
+const MULTI = {
+  'Test.java': 'import java.lang.annotation.*; @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.METHOD) public @interface Test {}',
+  'Solution.java': SOL,
+  'Main.java': 'public class Main { @Test public void addWorks(){ if(Solution.add(2,3)!=5) throw new AssertionError("bad"); } public static void main(String[] a) throws Exception { for (var m : Main.class.getDeclaredMethods()) if (m.isAnnotationPresent(Test.class)) { m.invoke(new Main()); System.out.println("PASS " + m.getName()); } } }'
+};
+const BAD = {'Main.java': 'public class Main { public static void main(String[] a){ int x = "s"; } }'};
+window.cases = {
+  basic: () => compileRun({'Solution.java': SOL, 'Main.java': MAIN}, 'Main', q.get('c') || 'javac'),
+  multi: () => compileRun(MULTI, 'Main', q.get('c') || 'javac'),
+  bad: () => compileRun(BAD, 'Main', q.get('c') || 'javac'),
+  loop: () => compileRun({'Main.java': LOOP}, 'Main', q.get('c') || 'javac'),
+};
+</script>
+<script>
+if (q.get('auto')) (async () => { window.R = {}; for (const k of q.get('auto').split(',')) { try { R[k] = await cases[k](); } catch (e) { R[k] = String(e); } } R.done = 1; parent.postMessage({spikeResult: JSON.parse(JSON.stringify(R))}, '*'); })();
+</script>
+<script>
+// host mode: runs a case in an iframe of this same page; removes it on timeout. sb='' => no sandbox
+window.runInIframe = (c, timeout = 8000, sb = 'allow-scripts', base = '') => new Promise(res => {
+  const t0 = performance.now(), f = document.createElement('iframe');
+  f.src = base + location.pathname + '?auto=' + c;
+  if (sb) f.setAttribute('sandbox', sb);
+  const done = (r) => { f.remove(); removeEventListener('message', on); res({...r, ms: performance.now() - t0}); };
+  const on = (e) => { if (e.source === f.contentWindow && e.data.spikeResult) done({ok: true, R: e.data.spikeResult}); };
+  addEventListener('message', on);
+  setTimeout(() => done({ok: false, killed: true}), timeout);
+  document.body.appendChild(f);
+});
+</script>
