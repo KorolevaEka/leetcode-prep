@@ -24,6 +24,11 @@ describe("groupBy", () => {
     expect(groupBy([rows[0]], r => r.status)).toEqual({ passed: [rows[0]] });
   });
 
+  test("элементы без ключа пропускаются", () => {
+    expect(groupBy([1, 2, 3, 4], n => (n % 2 === 0 ? "even" : undefined))).toEqual({ even: [2, 4] });
+    expect(groupBy([1, 3], n => (n % 2 === 0 ? "even" : undefined))).toEqual({});
+  });
+
   test("пустой вход", () => {
     expect(groupBy([], (r: Row) => r.status)).toEqual({});
   });
@@ -35,10 +40,11 @@ describe("groupBy", () => {
     });
   });
 
-  test("ключи результата ограничены типом ключа", () => {
+  test("типы результата проверяются компилятором", () => {
     const compileChecks = () => {
       const grouped = groupBy(rows, r => r.status);
-      const passed: Row[] | undefined = grouped.passed;
+      // @ts-expect-error группы может не быть: значение может быть undefined
+      const passed: Row[] = grouped.passed;
       // @ts-expect-error статуса «skipped» нет среди возможных ключей
       const skipped = grouped.skipped;
       return [passed, skipped];

@@ -3,14 +3,15 @@
   "level": "hard",
   "kind": "code",
   "hints": [
-    "K extends string",
-    "Partial<Record<K, T[]>>",
-    "Map<K, T[]> и Object.fromEntries",
-    "функция-ключ (item: T) => K"
+    "Map<K, T[]> помнит порядок вставки",
+    "Object.fromEntries",
+    "что делать, если ключ undefined"
   ],
   "mutants": {
     "wide-record": "результат — Record<string, T[]>: компилятор разрешает обращаться к любым ключам",
+    "total-record": "результат — Record<K, T[]>: тип обещает группу для каждого ключа, хотя пустых групп нет",
     "last-wins": "в группе остаётся только последний элемент",
+    "keeps-undefined": "элементы без ключа попадают в группу «undefined»",
     "plain-object": "ломается на ключах вроде «constructor»: группы лежат в обычном объекте"
   }
 }

@@ -1,7 +1,8 @@
-export function groupBy<T, K extends string>(items: readonly T[], keyOf: (item: T) => K): Partial<Record<K, T[]>> {
+export function groupBy<T, K extends string>(items: readonly T[], keyOf: (item: T) => K | undefined): Partial<Record<K, T[]>> {
   const groups: Record<string, T[]> = {};
   for (const item of items) {
     const key = keyOf(item);
+    if (key === undefined) continue;
     groups[key] = groups[key] ?? [];
     groups[key].push(item);
   }

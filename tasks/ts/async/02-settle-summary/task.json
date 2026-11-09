@@ -3,9 +3,8 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "Promise.allSettled",
-    "поле status у результата",
-    "filter + length"
+    "у Promise есть метод, который ждёт все исходы, включая ошибки",
+    "у каждого результата есть поле status"
   ],
   "mutants": {
     "promise-all": "отклоняется при первой же ошибке вместо подсчёта итогов",

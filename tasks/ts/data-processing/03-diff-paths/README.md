@@ -10,6 +10,7 @@
 ```
 diffPaths({ user: { name: "a", roles: ["x", "y"] } }, { user: { name: "b", roles: ["x", "z", "w"] } })
 ->  ["user.name", "user.roles[1]", "user.roles[2]"]
+diffPaths([{ id: 1 }, { id: 2 }], [{ id: 1 }, { id: 3 }])  ->  ["[1].id"]
 diffPaths(1, 2)       ->  ["$"]
 diffPaths({}, {})     ->  []
 ```
