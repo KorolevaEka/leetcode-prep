@@ -9,7 +9,7 @@ const ready = (async () => {
   return py;
 })();
 
-onmessage = async ({ data: { id, files } }) => {
+onmessage = async ({ data: { subject, tests } }) => {
   let out = "";
   try {
     const py = await ready;
@@ -17,17 +17,19 @@ onmessage = async ({ data: { id, files } }) => {
     const write = buf => { out += dec.decode(buf); return buf.length; };
     py.setStdout({ write });
     py.setStderr({ write });
-    const dir = "/tasks/" + id;
+    const dir = "/work";
     py.FS.mkdirTree(dir);
-    for (const [name, text] of Object.entries(files)) py.FS.writeFile(`${dir}/${name}`, text);
+    py.FS.writeFile(`${dir}/solution.py`, subject);
+    py.FS.writeFile(`${dir}/test_solution.py`, tests);
     const code = py.runPython(`
-import sys, pytest
+import sys, importlib, pytest
+importlib.invalidate_caches()
 for m in ("solution", "test_solution"):
     sys.modules.pop(m, None)
-int(pytest.main(["-q", "-p", "no:cacheprovider", "--rootdir", ${JSON.stringify(dir)}, ${JSON.stringify(dir)}]))
+int(pytest.main(["-q", "-p", "no:cacheprovider", "--rootdir", "${dir}", "${dir}"]))
 `);
-    postMessage({ ok: code === 0, output: out });
+    postMessage({ passed: code === 0, output: out, ...(code === 5 && { noTests: true }) });
   } catch (e) {
-    postMessage({ ok: false, output: out + String(e) });
+    postMessage({ passed: false, output: out + String(e) });
   }
 };

@@ -1,0 +1,9 @@
+{
+  "name": "live-coding-trainings",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "@electric-sql/pglite": "0.2.17"
+  }
+}

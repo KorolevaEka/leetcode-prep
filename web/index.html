@@ -128,6 +128,9 @@
   <main id="main"><div class="empty">Выбери задачу слева</div></main>
 </div>
 <script type="module">
+import { check } from "./check.js";
+import * as python from "./runners/python.js";
+import * as sql from "./runners/sql.js";
 let tasks = [], current = null, editor = null, saveTimer = null;
 
 const store = {
@@ -138,73 +141,18 @@ const solved = store.get("solved", {});
 const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 const md = s => window.marked ? marked.parse(s) : `<pre>${esc(s)}</pre>`;
 
-// ---------- Python: Pyodide + pytest в воркере ----------
-let worker = null, workerReady = false;
-function pyWorker() {
-  if (!worker) { worker = new Worker("runners/python-worker.js"); workerReady = false; }
-  return worker;
-}
-function runPython(t, code) {
-  const w = pyWorker();
-  return new Promise(resolve => {
-    // ponytail: первый запуск качает Pyodide и pytest (~15 МБ), поэтому лимит больше
-    const timer = setTimeout(() => {
-      w.terminate(); worker = null;
-      resolve({ ok: false, output: "Таймаут: решение работает слишком долго (бесконечный цикл?)" });
-    }, workerReady ? 10000 : 120000);
-    w.onmessage = ({ data }) => { clearTimeout(timer); workerReady = true; resolve(data); };
-    w.postMessage({ id: t.id, files: { "test_solution.py": t.tests, "solution.py": code } });
-  });
-}
-
-// ---------- SQL: PGlite (Postgres в WASM) ----------
-let pg = null;
-function pglite() {
-  pg ??= import("https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/index.js").then(async ({ PGlite }) => {
-    // значения отдаём текстом, как psql --csv: 1.50, t/f, 2024-01-01
-    const raw = v => v;
-    const oids = [16, 20, 21, 23, 26, 114, 700, 701, 1082, 1083, 1114, 1184, 1186, 1700, 3802];
-    const db = new PGlite({ parsers: Object.fromEntries(oids.map(o => [o, raw])) });
-    await db.waitReady;
-    return db;
-  });
-  return pg;
-}
-function parseCsv(text) {
-  const rows = []; let row = [], cell = "", q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
-    else if (c === '"') q = true;
-    else if (c === ",") { row.push(cell); cell = ""; }
-    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
-    else if (c !== "\r") cell += c;
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  return rows;
-}
-const toCsv = rows => rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v).join(",")).join("\n");
-async function runSql(t, code) {
-  try {
-    const db = await pglite();
-    await db.exec(t.schema);
-    const results = await db.exec(code, { rowMode: "array" });
-    const last = [...results].reverse().find(r => r.fields.length);
-    if (!last) return { ok: false, output: "Запрос ничего не вернул" };
-    const actual = [last.fields.map(f => f.name), ...last.rows.map(r => r.map(v => v === null ? "" : String(v)))];
-    const expected = parseCsv(t.expected.trim());
-    // порядок строк не важен (кроме заголовка); для задач с ORDER BY — смотреть глазами
-    const norm = rows => [JSON.stringify(rows[0]), ...rows.slice(1).map(r => JSON.stringify(r)).sort()].join("\n");
-    if (norm(actual) === norm(expected)) return { ok: true, output: "OK\n\n" + toCsv(actual) };
-    return { ok: false, output: `--- expected\n${toCsv(expected)}\n\n--- actual\n${toCsv(actual)}` };
-  } catch (e) {
-    return { ok: false, output: String(e.message || e) };
-  }
-}
+// ---------- Исполнители ----------
+const sqlReady = import("https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/index.js")
+  .then(m => sql.init(m.PGlite));
+const executors = {
+  python: python.execute,
+  sql: async (...args) => { await sqlReady; return sql.execute(...args); },
+};
 
 // ---------- Схема таблиц для SQL-задач ----------
 async function loadSchema(t) {
-  const db = await pglite();
+  await sqlReady;
+  const db = await sql.db();
   await db.exec(t.schema);
   const cols = (await db.query(`
     SELECT cl.relname AS tbl, a.attname AS col, format_type(a.atttypid, a.atttypmod) AS typ
@@ -392,7 +340,7 @@ function open(id) {
   renderHints();
   editor.focus();
   document.getElementById("run").onclick = run;
-  if (py) { pyWorker(); return; } // начинаем грузить Python заранее
+  if (py) { python.warmup(); return; } // начинаем грузить Python заранее
   const t = current, el = document.getElementById("schema");
   el.innerHTML = '<h2>Схема</h2><p class="muted">Загружаю Postgres в браузер…</p>';
   loadSchema(t).then(s => t === current && renderSchema(el, s))
@@ -404,8 +352,8 @@ async function run() {
   const t = current, code = editor.getValue();
   save();
   btn.disabled = true; out.className = "out";
-  out.textContent = t.lang === "python" && !workerReady ? "Загружаю Python в браузер (первый раз ~10 сек)…" : "Запускаю…";
-  const r = await (t.lang === "python" ? runPython(t, code) : runSql(t, code));
+  out.textContent = t.lang === "python" && !python.isReady() ? "Загружаю Python в браузер (первый раз ~10 сек)…" : "Запускаю…";
+  const r = await check(t, code, executors[t.lang]);
   if (t !== current) return;
   btn.disabled = false;
   out.className = "out " + (r.ok ? "ok" : "err");

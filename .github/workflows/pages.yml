@@ -19,6 +19,17 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pytest
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - run: pytest tests -q
+      - run: node --test tests/
+      - run: node scripts/verify.mjs tasks
       - run: python3 scripts/build.py _site
       - uses: actions/upload-pages-artifact@v3
       - id: deploy
