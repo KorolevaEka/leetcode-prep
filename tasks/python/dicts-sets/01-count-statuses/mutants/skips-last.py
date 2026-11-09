@@ -1,0 +1,5 @@
+def count_statuses(statuses: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for status in statuses[:-1]:
+        counts[status] = counts.get(status, 0) + 1
+    return counts

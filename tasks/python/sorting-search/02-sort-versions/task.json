@@ -1,0 +1,16 @@
+{
+  "title": "Сортировка версий",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "sorted(key=)",
+    "str.split('.')",
+    "tuple(map(int, ...))"
+  ],
+  "mutants": {
+    "lexicographic": "сравнивает версии как обычные строки",
+    "ignores-patch": "не смотрит на третье число (патч)",
+    "descending": "сортирует по убыванию",
+    "drops-duplicates": "схлопывает одинаковые версии"
+  }
+}

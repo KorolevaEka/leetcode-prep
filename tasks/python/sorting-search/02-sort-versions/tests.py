@@ -1,0 +1,14 @@
+import pytest
+from solution import sort_versions
+
+
+@pytest.mark.parametrize("versions, expected", [
+    (["1.10.0", "1.2.0", "1.2.10", "1.2.9"], ["1.2.0", "1.2.9", "1.2.10", "1.10.0"]),
+    (["2.0.0", "10.0.0"], ["2.0.0", "10.0.0"]),
+    (["1.0.1", "1.0.0", "1.0.1"], ["1.0.0", "1.0.1", "1.0.1"]),
+    (["0.9.9", "0.10.0", "0.9.10"], ["0.9.9", "0.9.10", "0.10.0"]),
+    (["3.1.4"], ["3.1.4"]),
+    ([], []),
+])
+def test_sort_versions(versions, expected):
+    assert sort_versions(versions) == expected
