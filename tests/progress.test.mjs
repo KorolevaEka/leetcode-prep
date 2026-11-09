@@ -281,3 +281,26 @@ test("seed: session merges by carry rules (server solved wins, draft only where 
   assert.equal(p.getDraft("e"), "E");
   assert.equal(p.isSolved("d"), false);
 });
+
+test("seed merge upsert failure writes carry back for retry", async () => {
+  const st = memStorage();
+  const p = createProgress({ supabase: fakeSupabase({ session, failUpserts: 2 }), storage: st, seed: { solved: ["a"], drafts: { a: "A" } } });
+  await p.init();
+  assert.equal(p.carryFailed(), true);
+  assert.deepEqual(JSON.parse(st.getItem("lct:guest-carry")), { solved: ["a"], drafts: { a: "A" } });
+  const f2 = fakeSupabase({ session });
+  const q = createProgress({ supabase: f2, storage: st });
+  await q.init();
+  assert.equal(q.carryFailed(), false);
+  assert.equal(q.isSolved("a"), true);
+  assert.equal(st.getItem("lct:guest-carry"), null);
+});
+
+test("absorb adds late guest work without overriding", async () => {
+  const p = createProgress({ supabase: fakeSupabase(), storage: memStorage() });
+  await p.init();
+  p.saveDraft("x", "X1");
+  p.absorb({ solved: ["a"], drafts: { a: "A", x: "X0" } });
+  assert.equal(p.isSolved("a"), true);
+  assert.equal(p.getDraft("x"), "X1");
+});

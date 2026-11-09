@@ -298,6 +298,7 @@ function render() {
 
 async function authenticate(authError) {
   try { supabase = await withTimeout(createSupabase(), 15000); } catch { supabase = null; }
+  authNote = "";
   let next = progress;
   const seed = progress.snapshot();
   if (supabase) {
@@ -306,18 +307,21 @@ async function authenticate(authError) {
     try {
       await withTimeout(next.init(), 15000);
       // ошибка select приходит как {error}, не исключение: иначе первая же правка затёрла бы серверный черновик
-      if (next.user() && next.saveState() === "error") throw new Error("progress load failed");
+      if (next.user() && next.saveState() === "error" && !next.carryFailed()) throw new Error("progress load failed");
     } catch {
       next = createProgress({ supabase, seed });
       authNote = "не удалось загрузить прогресс";
     }
   }
+  if (next.carryFailed()) authNote = "не удалось сохранить прогресс";
   if (authError) authNote = "Вход не удался: " + authError;
   const clean = cleanAuthParams(location.href); // после init: Supabase сначала обменивает ?code= на сессию
   if (clean) history.replaceState(null, "", clean);
   authDone = true;
   const changed = next.user() || next.solvedIds().size || authNote;
+  const late = progress.snapshot();
   progress = next;
+  next.absorb(late);
   if (changed || loadingShown) render();
 }
 

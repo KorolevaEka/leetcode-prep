@@ -10,6 +10,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
   let state = "saved";
   let timer = null;
   let flushing = null;
+  let carryFailed = false;
 
   const row = (id, p) => ({
     user_id: user.id, task_id: id, code: p.code, updated_at: new Date().toISOString(),
@@ -85,8 +86,11 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
             if (r.code != null) drafts.set(r.task_id, r.code);
           }
         }
-        if (failed) state = "error";
-        else storage.removeItem(CARRY_KEY);
+        if (failed) {
+          state = "error";
+          carryFailed = true;
+          storage.setItem(CARRY_KEY, JSON.stringify(carry));
+        } else storage.removeItem(CARRY_KEY);
       }
       return { login: user.login };
     },
@@ -108,6 +112,11 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       try { await flush(); } catch {}
       await supabase.auth.signOut();
       user = null; solved.clear(); drafts.clear(); pending.clear(); clearTimeout(timer);
+    },
+    carryFailed: () => carryFailed,
+    absorb(snap) {
+      for (const id of snap.solved) if (!solved.has(id)) this.markSolved(id, snap.drafts[id] ?? "");
+      for (const [id, code] of Object.entries(snap.drafts)) if (!drafts.has(id)) this.saveDraft(id, code);
     },
     snapshot: () => ({ solved: [...solved], drafts: Object.fromEntries(drafts) }),
     user: () => user,
