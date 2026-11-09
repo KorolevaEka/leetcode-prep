@@ -1,0 +1,15 @@
+{
+  "title": "Локаторы и CSS-селекторы",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "каждый класс хранит своё значение в final-поле",
+    "chain — потоком map(Locator::toCss) + Collectors.joining или циклом со StringBuilder"
+  ],
+  "mutants": {
+    "id-without-hash": "у локатора по id нет решётки",
+    "chain-comma": "в цепочке локаторы разделены запятой, а не пробелом",
+    "attribute-no-quotes": "значение атрибута без кавычек",
+    "class-without-dot": "у локатора по классу нет точки"
+  }
+}

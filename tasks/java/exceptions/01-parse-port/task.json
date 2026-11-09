@@ -1,0 +1,15 @@
+{
+  "title": "Проверка порта",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "Integer.parseInt бросает NumberFormatException — её нужно превратить в IllegalArgumentException",
+    "сначала null, потом trim, потом диапазон"
+  ],
+  "mutants": {
+    "zero-allowed": "принимает порт 0",
+    "too-big-allowed": "принимает порт 65536",
+    "no-trim": "не убирает пробелы по краям",
+    "null-npe": "на null падает с NullPointerException вместо IllegalArgumentException"
+  }
+}
