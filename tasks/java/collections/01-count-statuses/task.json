@@ -1,0 +1,14 @@
+{
+  "title": "Подсчёт статусов прогона",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "Map<String, Integer> и счётчик на каждый ключ",
+    "у Map есть merge и getOrDefault"
+  ],
+  "mutants": {
+    "always-one": "каждый статус получает счётчик 1",
+    "skips-first": "первое вхождение статуса не засчитывается",
+    "ignores-case": "считает статусы без учёта регистра"
+  }
+}

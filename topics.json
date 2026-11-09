@@ -130,6 +130,41 @@
       "id": "strings",
       "title": "Строки и StringBuilder",
       "description": "Работа со строками: разбор, нормализация, сборка через StringBuilder."
+    },
+    {
+      "id": "arrays-loops",
+      "title": "Массивы и циклы",
+      "description": "Обход и преобразование массивов, индексы, сдвиги и накопление в цикле."
+    },
+    {
+      "id": "collections",
+      "title": "Коллекции: List, Map, Set",
+      "description": "Списки, карты и множества: подсчёт, дедупликация, сортировка, кэш."
+    },
+    {
+      "id": "streams",
+      "title": "Stream API",
+      "description": "filter, map, sorted, groupingBy и flatMap на данных прогонов тестов."
+    },
+    {
+      "id": "oop",
+      "title": "ООП и интерфейсы",
+      "description": "Интерфейсы, классы, неизменяемые объекты, equals и hashCode, полиморфизм."
+    },
+    {
+      "id": "exceptions",
+      "title": "Исключения и валидация",
+      "description": "Проверка входных данных, свои исключения, откат при ошибках."
+    },
+    {
+      "id": "algorithms",
+      "title": "Алгоритмы",
+      "description": "Бинарный поиск, поиск подстроки, порядок зависимостей."
+    },
+    {
+      "id": "write-tests",
+      "title": "Напиши тесты",
+      "description": "Напиши JUnit-тесты, которые ловят ошибки в чужом коде."
     }
   ]
 }
