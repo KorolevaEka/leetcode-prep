@@ -1,0 +1,11 @@
+{
+  "title": "Сколько тестов упало",
+  "level": "easy",
+  "kind": "code",
+  "hints": ["filter", "reduce", "toLowerCase"],
+  "mutants": {
+    "case-sensitive": "не учитывает регистр: «Failed» и «FAILED» не считаются упавшими",
+    "counts-skipped": "считает пропущенные тесты («skipped») упавшими",
+    "off-by-one": "пропускает последний результат в списке"
+  }
+}
