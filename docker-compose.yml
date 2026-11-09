@@ -1,0 +1,14 @@
+services:
+  py:
+    build: .
+    volumes: [".:/work"]
+    working_dir: /work
+    command: sleep infinity
+    depends_on: [db]
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes: [".:/work"]
+    working_dir: /work

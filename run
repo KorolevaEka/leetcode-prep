@@ -1,0 +1,24 @@
+#!/bin/sh
+# usage: ./run python/0001-two-sum | ./run sql/0175-combine-two-tables
+set -eu
+dir=${1%/}
+
+case "$dir" in
+  python/*)
+    docker compose exec -T py pytest -q "$dir"
+    ;;
+  sql/*)
+    # schema.sql drops/recreates schema `t`, both files run in one session.
+    # Row order is ignored (sort) unless the task needs ORDER BY — then check by eye.
+    actual=$(docker compose exec -T db env PGOPTIONS=-cclient_min_messages=warning psql -U postgres -X -q -v ON_ERROR_STOP=1 --csv \
+      -f "$dir/schema.sql" -f "$dir/solution.sql")
+    if [ "$(printf '%s\n' "$actual" | sort)" = "$(sort "$dir/expected.csv")" ]; then
+      echo "OK"
+    else
+      echo "--- expected"; cat "$dir/expected.csv"
+      echo "--- actual";   printf '%s\n' "$actual"
+      exit 1
+    fi
+    ;;
+  *) echo "usage: ./run python/<task>|sql/<task>" >&2; exit 2 ;;
+esac
