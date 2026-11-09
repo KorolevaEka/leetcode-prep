@@ -1,6 +1,65 @@
 {
-  "python": [{ "id": "arrays", "title": "Массивы", "description": "Работа со списками и индексами: перебор, словари, два указателя." }],
-  "sql": [{ "id": "joins", "title": "JOIN", "description": "Соединение таблиц: INNER, LEFT и условия соединения." }],
-  "ts": [{ "id": "strings-arrays", "title": "Строки и массивы", "description": "Базовая работа со строками и массивами: перебор, счётчики, типы." }],
-  "java": [{ "id": "strings", "title": "Строки и StringBuilder", "description": "Работа со строками: разбор, нормализация, сборка через StringBuilder." }]
+  "python": [
+    {
+      "id": "strings",
+      "title": "Строки",
+      "description": "Срезы, нормализация и разбор строк: маски, слаги, скобки."
+    },
+    {
+      "id": "lists-loops",
+      "title": "Списки и циклы",
+      "description": "Обход списков, счётчики, серии и интервалы."
+    },
+    {
+      "id": "dicts-sets",
+      "title": "Словари и множества",
+      "description": "Подсчёт, группировка и дедупликация данных."
+    },
+    {
+      "id": "sorting-search",
+      "title": "Сортировка и поиск",
+      "description": "Сортировка по ключу, версии, бинарный поиск."
+    },
+    {
+      "id": "two-pointers",
+      "title": "Два указателя и окно",
+      "description": "Слияние списков и скользящее окно."
+    },
+    {
+      "id": "recursion",
+      "title": "Рекурсия",
+      "description": "Вложенные структуры и обход деревьев."
+    },
+    {
+      "id": "data-parsing",
+      "title": "Разбор данных: логи, JSON, CSV",
+      "description": "Парсинг строк лога, JSON-отчётов и CSV."
+    },
+    {
+      "id": "write-tests",
+      "title": "Напиши тесты",
+      "description": "Напиши pytest-тесты, которые поймают баги в чужом коде."
+    }
+  ],
+  "sql": [
+    {
+      "id": "joins",
+      "title": "JOIN",
+      "description": "Соединение таблиц: INNER, LEFT и условия соединения."
+    }
+  ],
+  "ts": [
+    {
+      "id": "strings-arrays",
+      "title": "Строки и массивы",
+      "description": "Базовая работа со строками и массивами: перебор, счётчики, типы."
+    }
+  ],
+  "java": [
+    {
+      "id": "strings",
+      "title": "Строки и StringBuilder",
+      "description": "Работа со строками: разбор, нормализация, сборка через StringBuilder."
+    }
+  ]
 }
