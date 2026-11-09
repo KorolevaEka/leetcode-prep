@@ -25,7 +25,7 @@ const IDLE = "Вывод тестов появится здесь";
 const WAITING = "Идёт предыдущий запуск — кнопка включится, когда он закончится.";
 const SAVE_TEXT = { saved: "сохранено", saving: "сохраняю…", error: "не сохранено" };
 
-let tasks = [], topics = {}, supabase = null, progress = null, authNote = "";
+let tasks = [], topics = {}, supabase = null, progress = null, authNote = "", authDone = false;
 let view = null;      // открытая страница задачи: { task, editor }
 let running = null;   // исполнители рассчитаны на один запуск за раз — следующий ждёт
 let lastLang = "python", headerLang = null;
@@ -68,7 +68,7 @@ function renderHeader(lang = headerLang) {
 
 async function signIn() {
   if (!supabase) {
-    authNote = "Вход недоступен: не удалось загрузить Supabase. Проверь сеть и обнови страницу.";
+    authNote = authDone ? "Вход недоступен: не удалось загрузить Supabase. Проверь сеть и обнови страницу." : "Вход ещё загружается — попробуй через секунду.";
     return renderHeader();
   }
   try { await progress.signIn(); }
@@ -197,7 +197,7 @@ function renderTask(id) {
   const hints = () => renderHints($("hints"), editor, t, "Подсказки — необязательно использовать все, это только наводка:");
   editor.on("change", () => { progress.saveDraft(t.id, editor.getValue()); hints(); updateSave(); });
   hints();
-  editor.focus();
+  if (!matchMedia("(pointer: coarse)").matches) editor.focus();
   $("run").onclick = run;
   $("run").disabled = !!running;
   if (solved.has(t.id)) showNext(v);
@@ -256,6 +256,7 @@ async function run() {
     return;
   }
   showResult(r);
+  if (matchMedia("(max-width: 900px)").matches) $("out").scrollIntoView({ block: "nearest" });
   if (r.ok) showNext(v);
   updateSave();
 }
@@ -275,6 +276,30 @@ function render() {
   scrollTo(0, 0);
 }
 
+async function authenticate(authError) {
+  try { supabase = await withTimeout(createSupabase(), 15000); } catch { supabase = null; }
+  let next = progress;
+  if (supabase) {
+    // сетевой сбой не блокирует сайт: работаем как гость и говорим об этом
+    next = createProgress({ supabase });
+    try {
+      await withTimeout(next.init(), 15000);
+      // ошибка select приходит как {error}, не исключение: иначе первая же правка затёрла бы серверный черновик
+      if (next.user() && next.saveState() === "error") throw new Error("progress load failed");
+    } catch {
+      next = createProgress({ supabase });
+      authNote = "не удалось загрузить прогресс";
+    }
+  }
+  if (authError) authNote = "Вход не удался: " + authError;
+  const clean = cleanAuthParams(location.href); // после init: Supabase сначала обменивает ?code= на сессию
+  if (clean) history.replaceState(null, "", clean);
+  authDone = true;
+  const changed = next.user() || next.solvedIds().size || authNote;
+  progress = next;
+  if (changed) render();
+}
+
 async function boot() {
   $("main").innerHTML = '<p class="empty">Загружаю…</p>';
   const data = Promise.all(["tasks.json", "topics.json"].map(f => fetch(f, { cache: "no-store" }).then(r => {
@@ -282,27 +307,16 @@ async function boot() {
     return r.json();
   })));
   const authError = new URL(location.href).searchParams.get("error_description");
-  try { supabase = await withTimeout(createSupabase(), 15000); } catch { supabase = null; }
-  progress = createProgress({ supabase });
-  if (supabase) {
-    // сетевой сбой не блокирует сайт: работаем как гость и говорим об этом
-    try {
-      await withTimeout(progress.init(), 15000);
-      // ошибка select приходит как {error}, не исключение: иначе первая же правка затёрла бы серверный черновик
-      if (progress.user() && progress.saveState() === "error") throw new Error("progress load failed");
-    } catch {
-      progress = createProgress({ supabase });
-      authNote = "не удалось загрузить прогресс";
-    }
-  }
-  if (authError) authNote = "Вход не удался: " + authError;
-  const clean = cleanAuthParams(location.href); // после init: Supabase сначала обменивает ?code= на сессию
-  if (clean) history.replaceState(null, "", clean);
+  progress = createProgress({ supabase: null }); // гость в памяти: сайт рисуется сразу, вход подтянется следом
   try { [tasks, topics] = await data; }
   catch (e) { $("main").innerHTML = `<p class="empty">Не удалось загрузить задачи: ${esc(e.message)}. Обнови страницу.</p>`; return; }
   addEventListener("hashchange", render);
+  const flushNow = () => progress.flush().catch(() => {});
+  addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushNow(); });
+  addEventListener("pagehide", flushNow);
   setInterval(updateSave, 500);
   render();
+  await authenticate(authError);
 }
 
 boot();
