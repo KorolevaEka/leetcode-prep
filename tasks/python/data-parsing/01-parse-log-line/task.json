@@ -1,0 +1,15 @@
+{
+  "title": "Разбор строки лога",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "str.split(sep, maxsplit)",
+    "срез строки",
+    "str.partition"
+  ],
+  "mutants": {
+    "brackets-kept": "оставляет квадратные скобки вокруг уровня",
+    "message-cut": "обрезает сообщение на втором двоеточии",
+    "date-only": "в поле time попадает только дата без времени"
+  }
+}

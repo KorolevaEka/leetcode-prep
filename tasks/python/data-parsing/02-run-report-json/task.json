@@ -1,0 +1,16 @@
+{
+  "title": "Отчёт прогона из JSON",
+  "level": "medium",
+  "kind": "code",
+  "hints": [
+    "json.loads",
+    "dict.get(key, default)",
+    "последний элемент списка попыток"
+  ],
+  "mutants": {
+    "first-attempt": "смотрит на первую попытку вместо последней",
+    "failed-also-flaky": "упавший после ретраев тест попадает и в flaky",
+    "missing-results": "падает с KeyError, если в отчёте нет ключа results",
+    "no-attempts-crash": "падает на тесте без попыток"
+  }
+}

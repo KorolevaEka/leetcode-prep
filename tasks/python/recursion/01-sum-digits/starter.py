@@ -1,0 +1,2 @@
+def sum_digits(n: int) -> int:
+    pass
