@@ -7,12 +7,19 @@ Python и Postgres живут в docker-compose, папка проекта см�
 
 ```bash
 docker compose up -d --build   # один раз (и после правок Dockerfile/server.py)
-# веб-интерфейс: http://localhost:8000 — условие, редактор, кнопка «Запустить» (⌘↵)
+# веб-интерфейс: http://localhost:8000 — решения сохраняются в файлы solution.*
 docker compose exec py bash    # терминал внутри python-контейнера
 docker compose exec db psql -U postgres   # psql
 ```
 
-## Проверка (то же, что кнопка в интерфейсе; логика в check.py)
+## Сайт
+
+`index.html` + `py-worker.js`: код выполняется в браузере (Python — Pyodide + pytest, SQL — PGlite),
+задачи берутся из `tasks.json` (`build.py`). Публичная версия: https://korolevaeka.github.io/leetcode-prep/ —
+собирается GitHub Actions (`.github/workflows/pages.yml`) на каждый пуш в main, там черновики живут в localStorage.
+Новая задача попадает на публичный сайт только после коммита и пуша.
+
+## Проверка из терминала (pytest/psql в контейнерах, логика в check.py)
 
 ```bash
 ./run python/0001-two-sum

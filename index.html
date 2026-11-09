@@ -4,18 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LeetCode prep</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <style>
   :root {
     --bg: #f7f7f5; --panel: #fff; --text: #1d1d1b; --muted: #6b6b66; --line: #e3e2de;
     --accent: #3b5bdb; --ok: #2b8a3e; --ok-bg: #ebfbee; --err: #c92a2a; --err-bg: #fff5f5;
-    --code-bg: #f1f0ec;
+    --code-bg: #f1f0ec; --kw: #7b2cbf; --str: #2b8a3e; --num: #c2410c; --cmt: #8a8a84; --def: #1c64b8;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #161615; --panel: #1f1f1d; --text: #ecebe7; --muted: #9a9993; --line: #33332f;
       --accent: #748ffc; --ok: #69db7c; --ok-bg: #1b2b1f; --err: #ff8787; --err-bg: #2f1c1c;
-      --code-bg: #2a2a27;
+      --code-bg: #2a2a27; --kw: #c4a7ff; --str: #8ce99a; --num: #ffa94d; --cmt: #77776f; --def: #74c0fc;
     }
   }
   * { box-sizing: border-box; }
@@ -44,12 +50,25 @@
   .bar { display: flex; gap: 8px; align-items: center; }
   .bar .file { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 13px; margin-right: auto; }
   .bar button { font: inherit; padding: 6px 14px; border-radius: 6px; cursor: pointer;
-                border: 1px solid var(--line); background: var(--panel); color: inherit; }
-  .bar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+                border: 1px solid var(--accent); background: var(--accent); color: #fff; }
   .bar button:disabled { opacity: .6; cursor: wait; }
-  textarea { flex: 1 1 60%; min-height: 200px; resize: none; padding: 12px; border-radius: 8px;
-             border: 1px solid var(--line); background: var(--panel); color: inherit; tab-size: 4;
-             font: 14px/1.5 ui-monospace, Menlo, monospace; outline-color: var(--accent); }
+  .editor { flex: 1 1 60%; min-height: 200px; position: relative; }
+  .CodeMirror { position: absolute; inset: 0; height: auto; border-radius: 8px; border: 1px solid var(--line);
+                background: var(--panel); color: var(--text); font: 14px/1.5 ui-monospace, Menlo, monospace; }
+  .CodeMirror-focused { border-color: var(--accent); }
+  .CodeMirror-gutters { background: var(--panel); border-right: 1px solid var(--line); }
+  .CodeMirror-linenumber { color: var(--muted); }
+  .CodeMirror-cursor { border-left-color: var(--text); }
+  .CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: var(--code-bg); }
+  .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: bold; }
+  .cm-s-default .cm-keyword { color: var(--kw); }
+  .cm-s-default .cm-builtin { color: var(--def); }
+  .cm-s-default .cm-def { color: var(--def); }
+  .cm-s-default .cm-string { color: var(--str); }
+  .cm-s-default .cm-number { color: var(--num); }
+  .cm-s-default .cm-comment { color: var(--cmt); }
+  .cm-s-default .cm-variable, .cm-s-default .cm-variable-2, .cm-s-default .cm-property,
+  .cm-s-default .cm-operator, .cm-s-default .cm-punctuation { color: var(--text); }
   pre.out { flex: 1 1 40%; margin: 0; overflow: auto; padding: 12px; border-radius: 8px;
             background: var(--panel); border: 1px solid var(--line); color: var(--muted);
             font: 13px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
@@ -61,7 +80,7 @@
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
     main { grid-template-columns: 1fr; }
     .readme { border-right: 0; padding: 16px; }
-    textarea { min-height: 50vh; }
+    .editor { min-height: 50vh; }
   }
 </style>
 </head>
@@ -70,18 +89,83 @@
   <aside id="list"><h1>LeetCode prep</h1></aside>
   <main id="main"><div class="empty">Выбери задачу слева</div></main>
 </div>
-<script>
-let tasks = [], current = null;
-const solved = (() => { try { return JSON.parse(localStorage.solved || "{}"); } catch { return {}; } })();
-const saveSolved = () => { try { localStorage.solved = JSON.stringify(solved); } catch {} };
+<script type="module">
+const LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
+let tasks = [], current = null, editor = null, saveTimer = null;
+
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage[k]) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage[k] = JSON.stringify(v); } catch {} },
+};
+const solved = store.get("solved", {});
 const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 const md = s => window.marked ? marked.parse(s) : `<pre>${esc(s)}</pre>`;
 
-async function api(path, body) {
-  const r = await fetch(path, body && { method: "POST", body: JSON.stringify(body) });
-  return r.json();
+// ---------- Python: Pyodide + pytest в воркере ----------
+let worker = null, workerReady = false;
+function pyWorker() {
+  if (!worker) { worker = new Worker("py-worker.js"); workerReady = false; }
+  return worker;
+}
+function runPython(t, code) {
+  const w = pyWorker();
+  return new Promise(resolve => {
+    // ponytail: первый запуск качает Pyodide и pytest (~15 МБ), поэтому лимит больше
+    const timer = setTimeout(() => {
+      w.terminate(); worker = null;
+      resolve({ ok: false, output: "Таймаут: решение работает слишком долго (бесконечный цикл?)" });
+    }, workerReady ? 10000 : 120000);
+    w.onmessage = ({ data }) => { clearTimeout(timer); workerReady = true; resolve(data); };
+    w.postMessage({ id: t.id, files: { ...t.files, "solution.py": code } });
+  });
 }
 
+// ---------- SQL: PGlite (Postgres в WASM) ----------
+let pg = null;
+function pglite() {
+  pg ??= import("https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/index.js").then(async ({ PGlite }) => {
+    // значения отдаём текстом, как psql --csv: 1.50, t/f, 2024-01-01
+    const raw = v => v;
+    const oids = [16, 20, 21, 23, 26, 114, 700, 701, 1082, 1083, 1114, 1184, 1186, 1700, 3802];
+    const db = new PGlite({ parsers: Object.fromEntries(oids.map(o => [o, raw])) });
+    await db.waitReady;
+    return db;
+  });
+  return pg;
+}
+function parseCsv(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+const toCsv = rows => rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v).join(",")).join("\n");
+async function runSql(t, code) {
+  try {
+    const db = await pglite();
+    await db.exec(t.files["schema.sql"]);
+    const results = await db.exec(code, { rowMode: "array" });
+    const last = [...results].reverse().find(r => r.fields.length);
+    if (!last) return { ok: false, output: "Запрос ничего не вернул" };
+    const actual = [last.fields.map(f => f.name), ...last.rows.map(r => r.map(v => v === null ? "" : String(v)))];
+    const expected = parseCsv(t.files["expected.csv"].trim());
+    // порядок строк не важен (кроме заголовка); для задач с ORDER BY — смотреть глазами
+    const norm = rows => [JSON.stringify(rows[0]), ...rows.slice(1).map(r => JSON.stringify(r)).sort()].join("\n");
+    if (norm(actual) === norm(expected)) return { ok: true, output: "OK\n\n" + toCsv(actual) };
+    return { ok: false, output: `--- expected\n${toCsv(expected)}\n\n--- actual\n${toCsv(actual)}` };
+  } catch (e) {
+    return { ok: false, output: String(e.message || e) };
+  }
+}
+
+// ---------- UI ----------
 function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "<h1>LeetCode prep</h1>";
@@ -99,57 +183,66 @@ function renderList() {
   }
 }
 
+function save() {
+  const code = editor.getValue();
+  store.set("draft:" + current.id, code);
+  if (LOCAL) fetch("api/save", { method: "POST", body: JSON.stringify({ id: current.id, code }) }).catch(() => {});
+}
+
 function open(id) {
   current = tasks.find(t => t.id === id);
   renderList();
   const main = document.getElementById("main");
   if (!current) { main.innerHTML = '<div class="empty">Выбери задачу слева</div>'; return; }
-  const file = current.kind === "python" ? "solution.py" : "solution.sql";
+  const py = current.kind === "python";
   main.innerHTML = `
     <section class="readme">${md(current.readme)}</section>
     <section class="work">
       <div class="bar">
-        <span class="file">${esc(current.id)}/${file}</span>
-        <button id="save">Сохранить</button>
-        <button id="run" class="primary">Запустить ⌘↵</button>
+        <span class="file">${esc(current.id)}/${py ? "solution.py" : "solution.sql"}</span>
+        <button id="run">Запустить ⌘↵</button>
       </div>
-      <textarea id="code" spellcheck="false"></textarea>
+      <div class="editor" id="editor"></div>
       <pre class="out" id="out">Вывод тестов появится здесь</pre>
     </section>`;
-  const code = document.getElementById("code");
-  code.value = current.solution;
-  code.oninput = () => { current.solution = code.value; };
-  code.onkeydown = e => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(); }
-    else if (e.key === "s" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); }
-    else if (e.key === "Tab") { e.preventDefault(); code.setRangeText("    ", code.selectionStart, code.selectionEnd, "end"); current.solution = code.value; }
-  };
+  // локально файл — источник правды (его мог поменять агент), на сайте — черновик из браузера
+  const code = LOCAL ? current.solution : store.get("draft:" + current.id, current.solution);
+  const mod = /Mac/.test(navigator.platform) ? "Cmd" : "Ctrl";
+  editor = CodeMirror(document.getElementById("editor"), {
+    value: code,
+    mode: py ? "python" : "text/x-pgsql",
+    lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false,
+    matchBrackets: true, autoCloseBrackets: true,
+    extraKeys: {
+      Tab: cm => cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    "),
+      "Shift-Tab": cm => cm.indentSelection("subtract"),
+      [`${mod}-Enter`]: run,
+      [`${mod}-S`]: save,
+    },
+  });
+  editor.on("change", () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); });
+  editor.focus();
   document.getElementById("run").onclick = run;
-  document.getElementById("save").onclick = save;
-  code.focus();
-}
-
-async function save() {
-  await api("/api/save", { id: current.id, code: current.solution });
-  const out = document.getElementById("out");
-  out.className = "out"; out.textContent = "Сохранено";
+  if (py) pyWorker(); // начинаем грузить Python заранее
 }
 
 async function run() {
   const btn = document.getElementById("run"), out = document.getElementById("out");
-  btn.disabled = true; out.className = "out"; out.textContent = "Запускаю…";
-  try {
-    const r = await api("/api/run", { id: current.id, code: current.solution });
-    out.className = "out " + (r.ok ? "ok" : "err");
-    out.textContent = r.output;
-    if (r.ok) { solved[current.id] = true; saveSolved(); renderList(); }
-  } catch (e) {
-    out.className = "out err"; out.textContent = "Сервер недоступен: " + e;
-  } finally { btn.disabled = false; }
+  const t = current, code = editor.getValue();
+  save();
+  btn.disabled = true; out.className = "out";
+  out.textContent = t.kind === "python" && !workerReady ? "Загружаю Python в браузер (первый раз ~10 сек)…" : "Запускаю…";
+  const r = await (t.kind === "python" ? runPython(t, code) : runSql(t, code));
+  if (t !== current) return;
+  btn.disabled = false;
+  out.className = "out " + (r.ok ? "ok" : "err");
+  out.textContent = r.output;
+  if (r.ok) { solved[t.id] = true; store.set("solved", solved); renderList(); }
 }
 
 window.onhashchange = () => open(decodeURIComponent(location.hash.slice(1)));
-api("/api/tasks").then(t => { tasks = t; window.onhashchange(); });
+tasks = await (await fetch("tasks.json", { cache: "no-store" })).json();
+window.onhashchange();
 </script>
 </body>
 </html>
