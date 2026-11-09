@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LeetCode prep</title>
+<title>Live Coding Trainings</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -124,11 +124,10 @@
 </head>
 <body>
 <div class="app">
-  <aside id="list"><h1>LeetCode prep</h1></aside>
+  <aside id="list"><h1>Live Coding Trainings</h1></aside>
   <main id="main"><div class="empty">Выбери задачу слева</div></main>
 </div>
 <script type="module">
-const LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname);
 let tasks = [], current = null, editor = null, saveTimer = null;
 
 const store = {
@@ -142,7 +141,7 @@ const md = s => window.marked ? marked.parse(s) : `<pre>${esc(s)}</pre>`;
 // ---------- Python: Pyodide + pytest в воркере ----------
 let worker = null, workerReady = false;
 function pyWorker() {
-  if (!worker) { worker = new Worker("py-worker.js"); workerReady = false; }
+  if (!worker) { worker = new Worker("runners/python-worker.js"); workerReady = false; }
   return worker;
 }
 function runPython(t, code) {
@@ -154,7 +153,7 @@ function runPython(t, code) {
       resolve({ ok: false, output: "Таймаут: решение работает слишком долго (бесконечный цикл?)" });
     }, workerReady ? 10000 : 120000);
     w.onmessage = ({ data }) => { clearTimeout(timer); workerReady = true; resolve(data); };
-    w.postMessage({ id: t.id, files: { ...t.files, "solution.py": code } });
+    w.postMessage({ id: t.id, files: { "test_solution.py": t.tests, "solution.py": code } });
   });
 }
 
@@ -188,12 +187,12 @@ const toCsv = rows => rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${v.replace(
 async function runSql(t, code) {
   try {
     const db = await pglite();
-    await db.exec(t.files["schema.sql"]);
+    await db.exec(t.schema);
     const results = await db.exec(code, { rowMode: "array" });
     const last = [...results].reverse().find(r => r.fields.length);
     if (!last) return { ok: false, output: "Запрос ничего не вернул" };
     const actual = [last.fields.map(f => f.name), ...last.rows.map(r => r.map(v => v === null ? "" : String(v)))];
-    const expected = parseCsv(t.files["expected.csv"].trim());
+    const expected = parseCsv(t.expected.trim());
     // порядок строк не важен (кроме заголовка); для задач с ORDER BY — смотреть глазами
     const norm = rows => [JSON.stringify(rows[0]), ...rows.slice(1).map(r => JSON.stringify(r)).sort()].join("\n");
     if (norm(actual) === norm(expected)) return { ok: true, output: "OK\n\n" + toCsv(actual) };
@@ -206,7 +205,7 @@ async function runSql(t, code) {
 // ---------- Схема таблиц для SQL-задач ----------
 async function loadSchema(t) {
   const db = await pglite();
-  await db.exec(t.files["schema.sql"]);
+  await db.exec(t.schema);
   const cols = (await db.query(`
     SELECT cl.relname AS tbl, a.attname AS col, format_type(a.atttypid, a.atttypmod) AS typ
     FROM pg_attribute a JOIN pg_class cl ON cl.oid = a.attrelid JOIN pg_namespace n ON n.oid = cl.relnamespace
@@ -229,7 +228,7 @@ async function loadSchema(t) {
   const links = keys.filter(k => k.kind === "f")
     .map(k => ({ from: `${k.tbl}.${k.col}`, to: `${k.ftbl}.${k.fcol}`, real: true }));
 
-  // В LeetCode-схемах внешних ключей обычно не объявляют (и данные им не всегда соответствуют),
+  // В учебных схемах внешних ключей обычно не объявляют (и данные им не всегда соответствуют),
   // поэтому дорисовываем пунктиром связи по имени: person_id -> person / persons / people.
   // ponytail: эвристика по именам, для нестандартных имён объявляй REFERENCES в schema.sql
   const linked = new Set(links.map(l => l.from));
@@ -312,15 +311,15 @@ function renderSchema(el, { tables, pk, links, data }) {
 // ---------- UI ----------
 function renderList() {
   const list = document.getElementById("list");
-  list.innerHTML = "<h1>LeetCode prep</h1>";
+  list.innerHTML = "<h1>Live Coding Trainings</h1>";
   for (const kind of ["python", "sql"]) {
-    const group = tasks.filter(t => t.kind === kind);
+    const group = tasks.filter(t => t.lang === kind);
     if (!group.length) continue;
     list.insertAdjacentHTML("beforeend", `<h2>${kind === "python" ? "Python" : "SQL"}</h2>`);
     for (const t of group) {
       const b = document.createElement("button");
       b.className = t.id === current?.id ? "active" : "";
-      b.innerHTML = `<span class="mark">${solved[t.id] ? "✓" : ""}</span><span>${esc(t.id.split("/")[1])}</span>`;
+      b.innerHTML = `<span class="mark">${solved[t.id] ? "✓" : ""}</span><span>${esc(t.id.split("/")[2])}</span>`;
       b.onclick = () => { location.hash = t.id; };
       list.append(b);
     }
@@ -330,10 +329,9 @@ function renderList() {
 function save() {
   const code = editor.getValue();
   store.set("draft:" + current.id, code);
-  if (LOCAL) fetch("api/save", { method: "POST", body: JSON.stringify({ id: current.id, code }) }).catch(() => {});
 }
 
-// Подсказки: ключевые слова из hints.txt. Ничего не проверяют и не обязательны —
+// Подсказки: ключевые слова из task.json. Ничего не проверяют и не обязательны —
 // клик вставляет слово в редактор, × убирает подсказку, уже использованные помечены ✓.
 function renderHints() {
   const el = document.getElementById("hints"), t = current;
@@ -364,7 +362,7 @@ function open(id) {
   renderList();
   const main = document.getElementById("main");
   if (!current) { main.innerHTML = '<div class="empty">Выбери задачу слева</div>'; return; }
-  const py = current.kind === "python";
+  const py = current.lang === "python";
   main.innerHTML = `
     <section class="readme">${md(current.readme)}<div id="schema"></div></section>
     <section class="work">
@@ -376,8 +374,7 @@ function open(id) {
       <div class="editor" id="editor"></div>
       <pre class="out" id="out">Вывод тестов появится здесь</pre>
     </section>`;
-  // локально файл — источник правды (его мог поменять агент), на сайте — черновик из браузера
-  const code = LOCAL ? current.solution : store.get("draft:" + current.id, current.solution);
+  const code = store.get("draft:" + current.id, current.starter);
   const mod = /Mac/.test(navigator.platform) ? "Cmd" : "Ctrl";
   editor = CodeMirror(document.getElementById("editor"), {
     value: code,
@@ -407,8 +404,8 @@ async function run() {
   const t = current, code = editor.getValue();
   save();
   btn.disabled = true; out.className = "out";
-  out.textContent = t.kind === "python" && !workerReady ? "Загружаю Python в браузер (первый раз ~10 сек)…" : "Запускаю…";
-  const r = await (t.kind === "python" ? runPython(t, code) : runSql(t, code));
+  out.textContent = t.lang === "python" && !workerReady ? "Загружаю Python в браузер (первый раз ~10 сек)…" : "Запускаю…";
+  const r = await (t.lang === "python" ? runPython(t, code) : runSql(t, code));
   if (t !== current) return;
   btn.disabled = false;
   out.className = "out " + (r.ok ? "ok" : "err");

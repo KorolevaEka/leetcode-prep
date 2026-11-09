@@ -1,0 +1,10 @@
+{
+  "title": "Объединение двух таблиц",
+  "level": "easy",
+  "kind": "code",
+  "hints": ["SELECT", "FROM", "LEFT JOIN", "ON"],
+  "mutants": {
+    "inner-join": "INNER JOIN теряет людей без адреса",
+    "swapped-columns": "колонки first_name и last_name в неверном порядке"
+  }
+}

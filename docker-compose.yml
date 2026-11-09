@@ -3,19 +3,8 @@ services:
     build: .
     volumes: [".:/work"]
     working_dir: /work
-    command: python server.py
+    command: python3 scripts/serve.py
     ports: ["127.0.0.1:8000:8000"]
     environment:
-      PGHOST: db
-      PGUSER: postgres
-      PGPASSWORD: postgres
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
-    depends_on: [db]
-
-  db:
-    image: postgres:17
-    environment:
-      POSTGRES_PASSWORD: postgres
-    volumes: [".:/work"]
-    working_dir: /work

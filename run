@@ -1,3 +1,8 @@
 #!/bin/sh
-# usage: ./run python/0001-two-sum | ./run sql/0175-combine-two-tables
-exec docker compose exec -T py python check.py "$@"
+# ./run test            — тесты платформы (pytest + node --test)
+# ./run verify [путь]   — проверка задач (эталон проходит, мутанты падают)
+case "$1" in
+  test) exec docker compose exec -T py sh -c 'pytest tests/test_build.py -q && node --test tests/' ;;
+  verify) shift; exec docker compose exec -T py node scripts/verify.mjs "$@" ;;
+  *) echo "usage: ./run test | ./run verify [путь]"; exit 1 ;;
+esac

@@ -19,7 +19,7 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir _site && cp index.html py-worker.js _site/ && python3 build.py > _site/tasks.json
+      - run: python3 scripts/build.py _site
       - uses: actions/upload-pages-artifact@v3
       - id: deploy
         uses: actions/deploy-pages@v4
