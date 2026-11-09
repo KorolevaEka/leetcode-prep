@@ -197,3 +197,15 @@ test("failed markSolved retries with its solved_at", async () => {
   assert.ok(a.solved_at);
   assert.equal(p.saveState(), "saved");
 });
+
+test("signIn merges with an unconsumed carry instead of overwriting it", async () => {
+  const st = memStorage();
+  st.setItem("lct:guest-carry", JSON.stringify({ solved: ["a"], drafts: { a: "A", b: "old" } }));
+  const g = createProgress({ supabase: fakeSupabase(), storage: st });
+  await g.markSolved("c", "C");
+  g.saveDraft("b", "new");
+  await g.signIn();
+  const carry = JSON.parse(st.getItem("lct:guest-carry"));
+  assert.deepEqual(carry.solved.sort(), ["a", "c"]);
+  assert.deepEqual(carry.drafts, { a: "A", b: "new", c: "C" });
+});

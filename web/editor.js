@@ -6,6 +6,15 @@ const store = {
   set(k, v) { try { localStorage[k] = JSON.stringify(v); } catch {} },
 };
 
+// Подсказка «использована», если встречается в коде; \b только там, где край подсказки — буква/цифра/_.
+export function hintUsed(hint, code) {
+  const h = hint.trim();
+  if (!h) return false;
+  const body = h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  const edge = c => (/\w/.test(c) ? "\\b" : "");
+  return new RegExp(edge(h[0]) + body + edge(h.at(-1)), "i").test(code);
+}
+
 export function createEditor(el, { value, lang, readOnly = false, onRun, onSave }) {
   const ts = lang === "ts";
   const mod = /Mac/.test(navigator.platform) ? "Cmd" : "Ctrl";
@@ -28,7 +37,7 @@ export function renderHints(el, editor, task, label = "Подсказка:") {
   const key = "hints-hidden:" + task.id, hidden = store.get(key, []);
   const shown = task.hints.filter(h => !hidden.includes(h));
   const code = editor.getValue();
-  const used = h => new RegExp(`\\b${h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+")}\\b`, "i").test(code);
+  const used = h => hintUsed(h, code);
   el.innerHTML = (shown.length ? `<span class="muted">${esc(label)}</span>` : "") +
     shown.map(h => `<span class="chip ${used(h) ? "used" : ""}"><button data-h="${esc(h)}" title="Вставить в редактор">${esc(h)}</button><button class="x" data-x="${esc(h)}" title="Убрать подсказку">×</button></span>`).join("") +
     (hidden.length && task.hints.length ? `<button class="reset">вернуть подсказки (${hidden.length})</button>` : "");

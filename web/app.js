@@ -15,6 +15,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const md = s => window.marked ? marked.parse(s) : `<pre>${esc(s)}</pre>`;
 const LANG_NAME = Object.fromEntries(LANGS);
+const isLang = l => Object.hasOwn(LANG_NAME, l);
 const LEVEL_NAME = Object.fromEntries(LEVELS);
 const FILE = {
   code: { python: "solution.py", ts: "solution.ts", java: "Solution.java", sql: "solution.sql" },
@@ -247,7 +248,7 @@ async function run() {
   running = null;
   if (r.ok) {
     try { await progress.markSolved(t.id, code); } catch {}
-    renderHeader(t.lang);
+    renderHeader();
   }
   if ($("run")) $("run").disabled = false;
   if (view !== v) {
@@ -262,9 +263,9 @@ async function run() {
 // ---------- Роутинг ----------
 function render() {
   const route = parseRoute(location.hash);
-  if (route.page === "catalog" && !LANG_NAME[route.lang]) return location.replace("#/learn/python");
+  if (route.page === "catalog" && !isLang(route.lang)) return location.replace("#/learn/python");
   const lang = route.page === "catalog" ? route.lang : route.page === "task" ? route.id.split("/")[0] : null;
-  if (LANG_NAME[lang]) lastLang = lang;
+  if (isLang(lang)) lastLang = lang;
   view = null;
   document.body.classList.toggle("fit", route.page === "task");
   renderHeader(lang);
@@ -287,7 +288,8 @@ async function boot() {
     // сетевой сбой не блокирует сайт: работаем как гость и говорим об этом
     try {
       await withTimeout(progress.init(), 15000);
-      if (progress.user() && progress.saveState() === "error") authNote = "не удалось загрузить прогресс";
+      // ошибка select приходит как {error}, не исключение: иначе первая же правка затёрла бы серверный черновик
+      if (progress.user() && progress.saveState() === "error") throw new Error("progress load failed");
     } catch {
       progress = createProgress({ supabase });
       authNote = "не удалось загрузить прогресс";

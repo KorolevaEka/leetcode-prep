@@ -86,7 +86,13 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       return { login: user.login };
     },
     async signIn() {
-      storage.setItem(CARRY_KEY, JSON.stringify({ solved: [...solved], drafts: Object.fromEntries(drafts) }));
+      // неразобранный carry (прошлый вход не дошёл до upsert) не теряем: объединяем
+      let old = null;
+      try { old = JSON.parse(storage.getItem(CARRY_KEY)); } catch {}
+      storage.setItem(CARRY_KEY, JSON.stringify({
+        solved: [...new Set([...(old?.solved || []), ...solved])],
+        drafts: { ...(old?.drafts || {}), ...Object.fromEntries(drafts) },
+      }));
       await supabase.auth.signInWithOAuth({
         provider: "github",
         options: { redirectTo: location.origin + location.pathname + location.hash },
