@@ -142,16 +142,19 @@ const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&g
 const md = s => window.marked ? marked.parse(s) : `<pre>${esc(s)}</pre>`;
 
 // ---------- Исполнители ----------
-const sqlReady = import("https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/index.js")
-  .then(m => sql.init(m.PGlite));
+let sqlLoading = null;
+const PGLITE_URL = "https://cdn.jsdelivr.net/npm/@electric-sql/pglite@0.2.17/dist/index.js";
+// лениво, один раз; при сбое сбрасываем, чтобы повторный запуск мог сработать
+const sqlReady = () => sqlLoading ??= import(PGLITE_URL).then(m => sql.init(m.PGlite))
+  .catch(e => { sqlLoading = null; throw e; });
 const executors = {
   python: python.execute,
-  sql: async (...args) => { await sqlReady; return sql.execute(...args); },
+  sql: async (...args) => { await sqlReady(); return sql.execute(...args); },
 };
 
 // ---------- Схема таблиц для SQL-задач ----------
 async function loadSchema(t) {
-  await sqlReady;
+  await sqlReady();
   const db = await sql.db();
   await db.exec(t.schema);
   const cols = (await db.query(`
@@ -353,8 +356,10 @@ async function run() {
   save();
   btn.disabled = true; out.className = "out";
   out.textContent = t.lang === "python" && !python.isReady() ? "Загружаю Python в браузер (первый раз ~10 сек)…" : "Запускаю…";
-  const r = await check(t, code, executors[t.lang]);
-  if (t !== current) return;
+  let r;
+  try { r = await check(t, code, executors[t.lang]); }
+  catch (e) { r = { ok: false, output: "Не удалось выполнить: " + String(e.message || e) }; }
+  if (t !== current) { btn.disabled = false; return; }
   btn.disabled = false;
   out.className = "out " + (r.ok ? "ok" : "err");
   out.textContent = r.output;
