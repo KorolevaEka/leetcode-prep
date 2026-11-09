@@ -323,6 +323,7 @@ async function authenticate(authError) {
   progress = next;
   next.absorb(late);
   if (changed || loadingShown) render();
+  else renderHeader();
 }
 
 async function boot() {
