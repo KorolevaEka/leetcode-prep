@@ -10,7 +10,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
   let flushing = null;
 
   const row = (id, p) => ({
-    task_id: id, code: p.code, updated_at: new Date().toISOString(),
+    user_id: user.id, task_id: id, code: p.code, updated_at: new Date().toISOString(),
     ...(p.solvedAt ? { solved_at: p.solvedAt } : {}),
   });
   const upsert = payload => supabase.from("progress").upsert(payload, { onConflict: "user_id,task_id" });
@@ -41,6 +41,11 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       const session = data?.session;
       const carryRaw = storage.getItem(CARRY_KEY);
       if (!session) {
+        try {
+          const guest = JSON.parse(carryRaw);
+          for (const id of guest?.solved || []) solved.add(id);
+          for (const [id, code] of Object.entries(guest?.drafts || {})) drafts.set(id, code);
+        } catch {}
         storage.removeItem(CARRY_KEY);
         return null;
       }
@@ -64,9 +69,9 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
             const srv = server.get(id);
             if (srv?.solved_at) continue;
             if (carry.solved.includes(id)) {
-              withSolved.push({ task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now });
+              withSolved.push({ user_id: user.id, task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now });
             } else if (!srv) {
-              codeOnly.push({ task_id: id, code: carry.drafts[id], updated_at: now });
+              codeOnly.push({ user_id: user.id, task_id: id, code: carry.drafts[id], updated_at: now });
             }
           }
           let failed = false;
@@ -98,7 +103,9 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
         options: { redirectTo: location.origin + location.pathname + location.hash },
       });
     },
+    flush,
     async signOut() {
+      try { await flush(); } catch {}
       await supabase.auth.signOut();
       user = null; solved.clear(); drafts.clear(); pending.clear(); clearTimeout(timer);
     },

@@ -60,7 +60,7 @@ test("carry: signIn stores guest progress, init upserts it and clears key", asyn
   assert.equal(rows.length, 3);
   assert.ok(rows.filter(r => r.solved_at).map(r => r.task_id).sort().join() === "a,b");
   assert.ok(sb.upserts.every(u => u.opts.onConflict === "user_id,task_id"));
-  assert.ok(rows.every(r => !("user_id" in r)));
+  assert.ok(rows.every(r => r.user_id === "u1"));
   assert.equal(st.getItem("lct:guest-carry"), null);
   assert.ok(p.isSolved("a") && p.isSolved("b") && !p.isSolved("c"));
 });
@@ -70,6 +70,48 @@ test("no session: stale carry key is removed", async () => {
   st.setItem("lct:guest-carry", "{}");
   await createProgress({ supabase: fakeSupabase(), storage: st }).init();
   assert.equal(st.getItem("lct:guest-carry"), null);
+});
+
+test("no session: a guest carry is loaded back into guest memory, then removed", async () => {
+  const st = memStorage();
+  st.setItem("lct:guest-carry", JSON.stringify({ solved: ["a"], drafts: { a: "A", c: "C" } }));
+  const p = createProgress({ supabase: fakeSupabase(), storage: st });
+  assert.equal(await p.init(), null);
+  assert.ok(p.isSolved("a"));
+  assert.equal(p.getDraft("c"), "C");
+  assert.equal(st.getItem("lct:guest-carry"), null);
+});
+
+test("every upsert row carries the current user_id", async () => {
+  const sb = fakeSupabase({ session });
+  const p = createProgress({ supabase: sb, storage: memStorage(), debounceMs: 10 });
+  await p.init();
+  p.saveDraft("a", "x");
+  await wait(40);
+  await p.markSolved("b", "y");
+  assert.ok(sb.upserts.every(u => [u.payload].flat().every(r => r.user_id === "u1")));
+});
+
+test("signOut flushes pending drafts before signing out", async () => {
+  const sb = fakeSupabase({ session });
+  const order = [];
+  const so = sb.auth.signOut;
+  sb.auth.signOut = async () => { order.push(["out", sb.upserts.length]); return so(); };
+  const p = createProgress({ supabase: sb, storage: memStorage(), debounceMs: 5000 });
+  await p.init();
+  p.saveDraft("a", "x");
+  await p.signOut();
+  assert.deepEqual(order, [["out", 1]]);
+  assert.equal(sb.upserts[0].payload.code, "x");
+});
+
+test("flush() writes pending drafts immediately", async () => {
+  const sb = fakeSupabase({ session });
+  const p = createProgress({ supabase: sb, storage: memStorage(), debounceMs: 5000 });
+  await p.init();
+  p.saveDraft("a", "x");
+  await p.flush();
+  assert.equal(sb.upserts.length, 1);
 });
 
 test("user: init loads solved and drafts", async () => {

@@ -20,7 +20,7 @@ test("task route", () => {
 });
 
 test("cleanAuthParams strips code/error params and keeps the rest", () => {
-  const u = new URL("https://x.github.io/live-coding-trainings/?code=abc&error=e&error_description=d&keep=1#/learn/sql");
+  const u = new URL("https://x.github.io/live-coding-trainings/?code=abc&error=e&error_code=ec&error_description=d&keep=1#/learn/sql");
   const c = cleanAuthParams(u);
   assert.equal(c.toString(), "https://x.github.io/live-coding-trainings/?keep=1#/learn/sql");
   assert.equal(u.searchParams.get("code"), "abc");

@@ -16,7 +16,7 @@ export function parseRoute(hash) {
 // PKCE-возврат с GitHub кладёт ?code= в query; после обмена URL нужно почистить.
 export function cleanAuthParams(url) {
   const u = new URL(url);
-  const keys = ["code", "error", "error_description"].filter(k => u.searchParams.has(k));
+  const keys = ["code", "error", "error_code", "error_description"].filter(k => u.searchParams.has(k));
   if (!keys.length) return null;
   keys.forEach(k => u.searchParams.delete(k));
   return u;
