@@ -16,6 +16,7 @@ def task_list() -> list[dict]:
             "readme": (ROOT / t / "README.md").read_text(),
             "solution": solution_file(t).read_text(),
             "files": {f: (ROOT / t / f).read_text() for f in FILES[kind]},
+            "hints": [h.strip() for h in hints.read_text().splitlines() if h.strip()] if (hints := ROOT / t / "hints.txt").exists() else [],
         })
     return out
 

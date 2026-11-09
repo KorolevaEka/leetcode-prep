@@ -75,6 +75,17 @@
   pre.out.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
   pre.out.err { background: var(--err-bg); color: var(--err); border-color: var(--err); }
   .empty { padding: 40px; color: var(--muted); }
+  .hints { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+  .hints:empty { display: none; }
+  .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px;
+          background: var(--panel); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .chip button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; padding: 3px 4px 3px 10px; }
+  .chip button.x { padding: 3px 9px 3px 4px; color: var(--muted); }
+  .chip button.x:hover { color: var(--err); }
+  .chip:hover { border-color: var(--accent); }
+  .chip.used { opacity: .55; }
+  .chip.used button:first-child::after { content: " ✓"; color: var(--ok); }
+  .hints .reset { border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; text-decoration: underline; }
   .readme h2 { font-size: 16px; margin: 28px 0 10px; }
   .muted { color: var(--muted); font-size: 13px; }
   .er { position: relative; display: flex; flex-wrap: wrap; gap: 28px 36px; align-items: flex-start;
@@ -322,6 +333,32 @@ function save() {
   if (LOCAL) fetch("api/save", { method: "POST", body: JSON.stringify({ id: current.id, code }) }).catch(() => {});
 }
 
+// Подсказки: ключевые слова из hints.txt. Ничего не проверяют и не обязательны —
+// клик вставляет слово в редактор, × убирает подсказку, уже использованные помечены ✓.
+function renderHints() {
+  const el = document.getElementById("hints"), t = current;
+  const key = "hints-hidden:" + t.id, hidden = store.get(key, []);
+  const shown = t.hints.filter(h => !hidden.includes(h));
+  const code = editor.getValue();
+  const used = h => new RegExp(`\\b${h.replace(/\s+/g, "\\s+")}\\b`, "i").test(code);
+  el.innerHTML = (shown.length ? '<span class="muted">Подсказка:</span>' : "") +
+    shown.map(h => `<span class="chip ${used(h) ? "used" : ""}"><button data-h="${esc(h)}" title="Вставить в редактор">${esc(h)}</button><button class="x" data-x="${esc(h)}" title="Убрать подсказку">×</button></span>`).join("") +
+    (hidden.length && t.hints.length ? `<button class="reset">вернуть подсказки (${hidden.length})</button>` : "");
+  el.onclick = e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.h) {
+      const { line, ch } = editor.getCursor(), before = editor.getLine(line).slice(0, ch);
+      editor.replaceSelection((before && !/\s$/.test(before) ? " " : "") + b.dataset.h + " ");
+      editor.focus();
+    } else if (b.dataset.x) {
+      store.set(key, [...hidden, b.dataset.x]); renderHints();
+    } else {
+      store.set(key, []); renderHints();
+    }
+  };
+}
+
 function open(id) {
   current = tasks.find(t => t.id === id);
   renderList();
@@ -335,6 +372,7 @@ function open(id) {
         <span class="file">${esc(current.id)}/${py ? "solution.py" : "solution.sql"}</span>
         <button id="run">Запустить ⌘↵</button>
       </div>
+      <div class="hints" id="hints"></div>
       <div class="editor" id="editor"></div>
       <pre class="out" id="out">Вывод тестов появится здесь</pre>
     </section>`;
@@ -353,7 +391,8 @@ function open(id) {
       [`${mod}-S`]: save,
     },
   });
-  editor.on("change", () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); });
+  editor.on("change", () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 400); renderHints(); });
+  renderHints();
   editor.focus();
   document.getElementById("run").onclick = run;
   if (py) { pyWorker(); return; } // начинаем грузить Python заранее
