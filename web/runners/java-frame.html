@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- CheerpJ (javac из JDK 21) в отдельном iframe: по таймауту iframe удаляется вместе с рантаймом. -->
+<pre id="console"></pre>
+<script src="https://cjrtnc.leaningtech.com/5.0/loader.js"></script>
+<script>
+const con = document.getElementById("console");
+let started = null;
+window.lct = {
+  init: () => started ??= cheerpjInit({ version: 21, status: "none" }),
+  output: () => con.textContent,
+  // files: {"Name.java": source}; javac -> outDir, затем main(mainClass, ...args) с classpath outDir
+  async run(files, outDir, mainClass, args) {
+    await window.lct.init();
+    con.textContent = "";
+    const paths = Object.entries(files).map(([name, src]) => { cheerpOSAddStringFile("/str/" + name, src); return "/str/" + name; });
+    const compile = await cheerpjRunMain("com.sun.tools.javac.Main", "/app/", "-encoding", "UTF-8", "-nowarn", "-d", outDir, ...paths);
+    const compileOut = con.textContent;
+    if (compile !== 0 || !mainClass) return { compile, compileOut };
+    con.textContent = "";
+    const code = await cheerpjRunMain(mainClass, outDir + "/", ...args);
+    return { compile, code, out: con.textContent };
+  },
+};
+</script>

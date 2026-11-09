@@ -1,5 +1,6 @@
 {
   "python": [{ "id": "arrays", "title": "Массивы", "description": "Работа со списками и индексами: перебор, словари, два указателя." }],
   "sql": [{ "id": "joins", "title": "JOIN", "description": "Соединение таблиц: INNER, LEFT и условия соединения." }],
-  "ts": [{ "id": "strings-arrays", "title": "Строки и массивы", "description": "Базовая работа со строками и массивами: перебор, счётчики, типы." }]
+  "ts": [{ "id": "strings-arrays", "title": "Строки и массивы", "description": "Базовая работа со строками и массивами: перебор, счётчики, типы." }],
+  "java": [{ "id": "strings", "title": "Строки и StringBuilder", "description": "Работа со строками: разбор, нормализация, сборка через StringBuilder." }]
 }

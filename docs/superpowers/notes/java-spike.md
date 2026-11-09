@@ -1,7 +1,7 @@
 # Java in the browser (CheerpJ spike)
 
 Result: **javac from the CheerpJ JDK 21 runtime works** (`com.sun.tools.javac.Main`). ECJ is not needed
-(not tried; jar not committed). Prototype: `spikes/java/index.html` (deleted in Task 5).
+(not tried; jar not committed). Prototype `spikes/java/index.html` was deleted in Task 5; the shipped runner is `web/runners/java.js` + `java-frame.html`.
 
 ## Working calls
 ```js
@@ -51,3 +51,28 @@ Warm total ~1.7-1.9 s per Run. Page reload with browser-cached runtime: first co
   a fresh iframe per run (removing the old iframe) rather than reusing one.
 - `cheerpjInit` can only be called once per page; memoise the promise.
 - Community licence: runtime must stay on the CheerpJ CDN (done).
+
+## Task 5 decisions (shipped)
+- **Infinite loop: option (b), loop-guard instrumentation** (`web/runners/java-guard.js`, tests in `tests/java-guard.test.mjs`).
+  - Option (a) (run in a Java thread, `join(deadline)` from main) **does not work**: in CheerpJ 5 a tight loop in a
+    second thread is never preempted, `join(3000)` never returned, page frozen >90 s (tried twice, cold and warm).
+  - Before compiling in the browser, `__LCT.tick()` is inserted into the user's files (subject and tests, never the harness):
+    `{ __LCT.tick();` at the start of braced loop/method bodies; for unbraced/empty loops into the condition
+    (`while (__LCT.tick() && (c))`, `for (a; __LCT.tick() && (b); c)`); the tail of a braced `do {…} while` is left alone.
+    Strings, chars, text blocks and comments are skipped; no newlines are added (javac line numbers unchanged).
+  - `tick()` checks the clock every 1024 calls; after the deadline (TestRunner sets 9 s) it prints «Таймаут…» and
+    `Runtime.halt(124)`. Page is frozen until then and recovers; output printed before stays visible.
+    Measured in the pane: `while(true){}` -> «Таймаут» at 11.9 s total, the next run works (3.0 s).
+  - If the guarded code does not compile (a corner the lexer gets wrong, e.g. `while (true)` unbraced as the last statement
+    of a non-void method), the runner compiles the original code and runs it unprotected; compile errors are always
+    shown from the original code.
+  - Non-loop hangs (e.g. `Thread.sleep`) do not freeze the page; a 15 s parent timer removes the iframe (output kept)
+    and the next run creates a fresh one (6.1 s).
+- Output dir: unique `/files/lct/r<time><rand>` per run; TestRunner deletes sibling dirs on start, so `/files` does not grow
+  and stale `.class` files cannot leak.
+- **Open problem: after F5 / re-navigation of a tab that ran CheerpJ, CheerpJ in the new page is very slow or stalls**
+  (fresh tab: 3–6 s; same tab after reload: compile+run >15 s -> timeout; once a trivial compile hung >2 min).
+  Not timer throttling (fresh tab idle 60 s is fast), not IndexedDB (raw IDB ops fast, no version upgrade), removing the
+  iframe on `pagehide` does not help. Probably inside CheerpJ (it downloads through its cross-origin `c.html` iframe).
+  Seen only in the Claude browser pane; not checked in a regular Chrome. Mitigation: the timer-kill message tells the
+  user to open the site in a new tab. Matters for the OAuth return (same-tab navigation) in Task 7/12.

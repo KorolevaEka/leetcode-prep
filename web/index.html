@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <style>
@@ -133,6 +134,7 @@ import { check } from "./check.js";
 import * as python from "./runners/python.js";
 import * as sql from "./runners/sql.js";
 import * as ts from "./runners/ts.js";
+import * as java from "./runners/java.js";
 let tasks = [], current = null, editor = null, saveTimer = null;
 
 const store = {
@@ -152,6 +154,7 @@ const sqlReady = () => sqlLoading ??= import(PGLITE_URL).then(m => sql.init(m.PG
 const executors = {
   python: python.execute,
   ts: ts.execute,
+  java: java.execute,
   sql: async (...args) => { await sqlReady(); return sql.execute(...args); },
 };
 
@@ -266,10 +269,10 @@ function renderSchema(el, { tables, pk, links, data }) {
 function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "<h1>Live Coding Trainings</h1>";
-  for (const kind of ["python", "sql", "ts"]) {
+  for (const kind of ["python", "sql", "ts", "java"]) {
     const group = tasks.filter(t => t.lang === kind);
     if (!group.length) continue;
-    list.insertAdjacentHTML("beforeend", `<h2>${{ python: "Python", sql: "SQL", ts: "TypeScript" }[kind]}</h2>`);
+    list.insertAdjacentHTML("beforeend", `<h2>${{ python: "Python", sql: "SQL", ts: "TypeScript", java: "Java" }[kind]}</h2>`);
     for (const t of group) {
       const b = document.createElement("button");
       b.className = t.id === current?.id ? "active" : "";
@@ -316,12 +319,12 @@ function open(id) {
   renderList();
   const main = document.getElementById("main");
   if (!current) { main.innerHTML = '<div class="empty">Выбери задачу слева</div>'; return; }
-  const py = current.lang === "python", isTs = current.lang === "ts";
+  const py = current.lang === "python", isTs = current.lang === "ts", isJava = current.lang === "java";
   main.innerHTML = `
     <section class="readme">${md(current.readme)}<div id="schema"></div></section>
     <section class="work">
       <div class="bar">
-        <span class="file">${esc(current.id)}/${py ? "solution.py" : isTs ? "solution.ts" : "solution.sql"}</span>
+        <span class="file">${esc(current.id)}/${py ? "solution.py" : isTs ? "solution.ts" : isJava ? "Solution.java" : "solution.sql"}</span>
         <button id="run">Запустить ⌘↵</button>
       </div>
       <div class="hints" id="hints"></div>
@@ -332,7 +335,7 @@ function open(id) {
   const mod = /Mac/.test(navigator.platform) ? "Cmd" : "Ctrl";
   editor = CodeMirror(document.getElementById("editor"), {
     value: code,
-    mode: py ? "python" : isTs ? "text/typescript" : "text/x-pgsql",
+    mode: py ? "python" : isTs ? "text/typescript" : isJava ? "text/x-java" : "text/x-pgsql",
     lineNumbers: true, indentUnit: isTs ? 2 : 4, tabSize: isTs ? 2 : 4, indentWithTabs: false,
     matchBrackets: true, autoCloseBrackets: true,
     extraKeys: {
@@ -348,6 +351,7 @@ function open(id) {
   document.getElementById("run").onclick = run;
   if (py) { python.warmup(); return; } // начинаем грузить Python заранее
   if (isTs) { ts.warmup(); return; }
+  if (isJava) { java.warmup(); return; }
   const t = current, el = document.getElementById("schema");
   el.innerHTML = '<h2>Схема</h2><p class="muted">Загружаю Postgres в браузер…</p>';
   loadSchema(t).then(s => t === current && renderSchema(el, s))
@@ -360,7 +364,8 @@ async function run() {
   save();
   btn.disabled = true; out.className = "out";
   out.textContent = t.lang === "python" && !python.isReady() ? "Загружаю Python в браузер (первый раз ~10 сек)…"
-    : t.lang === "ts" && !ts.isReady() ? "Загружаю TypeScript в браузер (первый раз ~10 сек)…" : "Запускаю…";
+    : t.lang === "ts" && !ts.isReady() ? "Загружаю TypeScript в браузер (первый раз ~10 сек)…"
+    : t.lang === "java" && !java.isReady() ? "Загружаю Java в браузер (первый раз до минуты)…" : "Запускаю…";
   let r;
   try { r = await check(t, code, executors[t.lang]); }
   catch (e) { r = { ok: false, output: "Не удалось выполнить: " + String(e.message || e) }; }
