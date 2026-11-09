@@ -24,6 +24,8 @@ const ready = (async () => {
   return { compile, runTests: harness.runTests };
 })();
 
+ready.then(() => postMessage({ ready: true }), e => postMessage({ initError: String(e) }));
+
 onmessage = async ({ data: { subject, tests } }) => {
   try {
     const { compile, runTests } = await ready;

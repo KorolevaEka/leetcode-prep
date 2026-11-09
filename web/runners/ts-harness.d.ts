@@ -31,3 +31,7 @@ declare const console: {
   error(...args: unknown[]): void;
   debug(...args: unknown[]): void;
 };
+declare function setTimeout(handler: (...args: any[]) => void, ms?: number, ...args: any[]): number;
+declare function clearTimeout(id?: number): void;
+declare function setInterval(handler: (...args: any[]) => void, ms?: number, ...args: any[]): number;
+declare function clearInterval(id?: number): void;

@@ -57,6 +57,13 @@ test("matchers and .not", async () => {
   assert.equal(r.passed, true, r.output);
 });
 
+test("setTimeout/clearTimeout typecheck and work in async code", async () => {
+  const solution = `export const delay = (ms: number) => new Promise<string>(r => { setTimeout(() => r("done"), ms); });
+export const never = () => { const id = setTimeout(() => {}, 1000); clearTimeout(id); const i = setInterval(() => {}, 1000); clearInterval(i); };`;
+  const r = await run(solution, 'import { delay, never } from "./solution";\ntest("t", async () => { never(); await expect(delay(20)).resolves.toBe("done"); });');
+  assert.equal(r.passed, true, r.output);
+});
+
 test("infinite loop times out within 12 s", async () => {
   const t0 = Date.now();
   const r = await run("export const f = () => { while (true) {} };", tests("f();"));

@@ -9,6 +9,8 @@ const ready = (async () => {
   return py;
 })();
 
+ready.then(() => postMessage({ ready: true }), e => postMessage({ initError: String(e) }));
+
 onmessage = async ({ data: { subject, tests } }) => {
   let out = "";
   try {
