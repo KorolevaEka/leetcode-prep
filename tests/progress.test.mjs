@@ -251,3 +251,33 @@ test("signIn merges with an unconsumed carry instead of overwriting it", async (
   assert.deepEqual(carry.solved.sort(), ["a", "c"]);
   assert.deepEqual(carry.drafts, { a: "A", b: "new", c: "C" });
 });
+
+test("snapshot returns solved ids and drafts", async () => {
+  const p = createProgress({ supabase: fakeSupabase(), storage: memStorage() });
+  await p.init();
+  await p.markSolved("a", "A");
+  p.saveDraft("b", "B");
+  assert.deepEqual(p.snapshot(), { solved: ["a"], drafts: { a: "A", b: "B" } });
+});
+
+test("seed: no session keeps pre-auth guest work", async () => {
+  const p = createProgress({ supabase: fakeSupabase(), storage: memStorage(), seed: { solved: ["a"], drafts: { a: "A", b: "B" } } });
+  assert.equal(await p.init(), null);
+  assert.equal(p.isSolved("a"), true);
+  assert.equal(p.getDraft("b"), "B");
+});
+
+test("seed: session merges by carry rules (server solved wins, draft only where no row)", async () => {
+  const f = fakeSupabase({ session, rows: [
+    { task_id: "s", code: "SRV", solved_at: "2026-01-01T00:00:00Z" },
+    { task_id: "d", code: "SRVD", solved_at: null },
+  ] });
+  const p = createProgress({ supabase: f, storage: memStorage(), seed: { solved: ["s", "n"], drafts: { s: "G", n: "N", d: "GD", e: "E" } } });
+  await p.init();
+  assert.equal(p.getDraft("s"), "SRV");
+  assert.equal(p.isSolved("n"), true);
+  assert.equal(p.getDraft("n"), "N");
+  assert.equal(p.getDraft("d"), "SRVD");
+  assert.equal(p.getDraft("e"), "E");
+  assert.equal(p.isSolved("d"), false);
+});

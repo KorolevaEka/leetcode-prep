@@ -1,9 +1,11 @@
 const CARRY_KEY = "lct:guest-carry";
 
-export function createProgress({ supabase, storage = globalThis.sessionStorage, debounceMs = 1000 }) {
+export function createProgress({ supabase, storage = globalThis.sessionStorage, debounceMs = 1000, seed = null }) {
   let user = null;
   const solved = new Set();
   const drafts = new Map();
+  for (const id of seed?.solved || []) solved.add(id);
+  for (const [id, code] of Object.entries(seed?.drafts || {})) drafts.set(id, code);
   const pending = new Map(); // id -> { code, solvedAt? } — ещё не записано на сервер
   let state = "saved";
   let timer = null;
@@ -39,13 +41,15 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
     async init() {
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
-      const carryRaw = storage.getItem(CARRY_KEY);
+      let stored = null;
+      try { stored = JSON.parse(storage.getItem(CARRY_KEY)); } catch { storage.removeItem(CARRY_KEY); }
+      const carry = stored || seed ? {
+        solved: [...new Set([...(stored?.solved || []), ...(seed?.solved || [])])],
+        drafts: { ...(stored?.drafts || {}), ...(seed?.drafts || {}) },
+      } : null;
       if (!session) {
-        try {
-          const guest = JSON.parse(carryRaw);
-          for (const id of guest?.solved || []) solved.add(id);
-          for (const [id, code] of Object.entries(guest?.drafts || {})) drafts.set(id, code);
-        } catch {}
+        for (const id of carry?.solved || []) solved.add(id);
+        for (const [id, code] of Object.entries(carry?.drafts || {})) drafts.set(id, code);
         storage.removeItem(CARRY_KEY);
         return null;
       }
@@ -58,35 +62,31 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
         if (r.solved_at) solved.add(r.task_id);
         if (r.code != null) drafts.set(r.task_id, r.code);
       }
-      if (carryRaw) {
-        let carry = null;
-        try { carry = JSON.parse(carryRaw); } catch { storage.removeItem(CARRY_KEY); }
-        if (carry) {
-          const now = new Date().toISOString();
-          const withSolved = [];
-          const codeOnly = [];
-          for (const id of new Set([...carry.solved, ...Object.keys(carry.drafts)])) {
-            const srv = server.get(id);
-            if (srv?.solved_at) continue;
-            if (carry.solved.includes(id)) {
-              withSolved.push({ user_id: user.id, task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now });
-            } else if (!srv) {
-              codeOnly.push({ user_id: user.id, task_id: id, code: carry.drafts[id], updated_at: now });
-            }
+      if (carry) {
+        const now = new Date().toISOString();
+        const withSolved = [];
+        const codeOnly = [];
+        for (const id of new Set([...carry.solved, ...Object.keys(carry.drafts)])) {
+          const srv = server.get(id);
+          if (srv?.solved_at) continue;
+          if (carry.solved.includes(id)) {
+            withSolved.push({ user_id: user.id, task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now });
+          } else if (!srv) {
+            codeOnly.push({ user_id: user.id, task_id: id, code: carry.drafts[id], updated_at: now });
           }
-          let failed = false;
-          for (const group of [withSolved, codeOnly]) {
-            if (!group.length) continue;
-            const { error } = await upsert(group);
-            if (error) { failed = true; continue; }
-            for (const r of group) {
-              if (r.solved_at) solved.add(r.task_id);
-              if (r.code != null) drafts.set(r.task_id, r.code);
-            }
-          }
-          if (failed) state = "error";
-          else storage.removeItem(CARRY_KEY);
         }
+        let failed = false;
+        for (const group of [withSolved, codeOnly]) {
+          if (!group.length) continue;
+          const { error } = await upsert(group);
+          if (error) { failed = true; continue; }
+          for (const r of group) {
+            if (r.solved_at) solved.add(r.task_id);
+            if (r.code != null) drafts.set(r.task_id, r.code);
+          }
+        }
+        if (failed) state = "error";
+        else storage.removeItem(CARRY_KEY);
       }
       return { login: user.login };
     },
@@ -109,6 +109,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       await supabase.auth.signOut();
       user = null; solved.clear(); drafts.clear(); pending.clear(); clearTimeout(timer);
     },
+    snapshot: () => ({ solved: [...solved], drafts: Object.fromEntries(drafts) }),
     user: () => user,
     isSolved: id => solved.has(id),
     solvedIds: () => new Set(solved),

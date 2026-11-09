@@ -31,8 +31,9 @@ function parseCsv(text) {
 const toCsv = rows => rows.map(r => r.map(v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v).join(",")).join("\n");
 
 export async function execute(task, code) {
+  let d;
   try {
-    const d = await db();
+    d = await db();
     try { await d.exec("ROLLBACK"); } catch {}
     await d.exec(task.schema);
     const results = await d.exec(code, { rowMode: "array" });
@@ -46,5 +47,7 @@ export async function execute(task, code) {
     return { passed: false, output: `--- expected\n${toCsv(expected)}\n\n--- actual\n${toCsv(actual)}` };
   } catch (e) {
     return { passed: false, output: String(e.message || e) };
+  } finally {
+    try { await d?.exec("ROLLBACK"); } catch {}
   }
 }

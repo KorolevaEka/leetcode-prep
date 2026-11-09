@@ -2,6 +2,7 @@
 const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
 export async function loadSchema(t, db) {
+  try { await db.exec("ROLLBACK"); } catch {}
   await db.exec(t.schema);
   const cols = (await db.query(`
     SELECT cl.relname AS tbl, a.attname AS col, format_type(a.atttypid, a.atttypmod) AS typ

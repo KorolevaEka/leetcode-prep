@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { execute } from "../scripts/executors/sql.mjs";
+import * as sql from "../web/runners/sql.js";
+import { loadSchema } from "../web/schema.js";
 
 const dir = "tasks/sql/joins/01-never-run-cases/";
 const read = n => readFileSync(dir + n, "utf8");
@@ -29,4 +31,10 @@ test("dangling BEGIN with an error does not poison the next run", async () => {
   assert.equal(r1.passed, false);
   const r2 = await execute(task, read("reference.sql"));
   assert.equal(r2.passed, true, r2.output);
+});
+
+test("loadSchema renders after a dangling failed transaction", async () => {
+  await execute(task, "BEGIN; SELECT 1/0;");
+  const s = await loadSchema(task, await sql.db());
+  assert.ok(s.tables.length > 0);
 });

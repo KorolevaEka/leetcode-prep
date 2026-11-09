@@ -28,7 +28,13 @@ const SAVE_TEXT = { saved: "сохранено", saving: "сохраняю…", 
 let tasks = [], topics = {}, supabase = null, progress = null, authNote = "", authDone = false;
 let view = null;      // открытая страница задачи: { task, editor }
 let running = null;   // исполнители рассчитаны на один запуск за раз — следующий ждёт
-let lastLang = "python", headerLang = null;
+let lastLang = "python", headerLang = null, headerLanding = true, loadingShown = false;
+const ENTERED = "lct:entered";
+let entered = (() => { try { return sessionStorage.getItem(ENTERED) === "guest"; } catch { return false; } })();
+const setEntered = on => {
+  entered = on;
+  try { on ? sessionStorage.setItem(ENTERED, "guest") : sessionStorage.removeItem(ENTERED); } catch {}
+};
 
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 
@@ -54,21 +60,25 @@ const loadingText = lang =>
   : lang === "sql" && !sqlLoaded ? "Загружаю Postgres в браузер (первый раз ~10 сек)…" : "Запускаю…";
 
 // ---------- Шапка ----------
-function renderHeader(lang = headerLang) {
+function renderHeader(lang = headerLang, landing = headerLanding) {
   headerLang = lang;
+  headerLanding = landing;
   const counts = langCounts(tasks, progress.solvedIds());
   const user = progress.user();
-  $("tabs").innerHTML = LANGS.map(([id, name]) =>
-    `<a href="#/learn/${id}" class="${id === lang ? "active" : ""}">${name}<span class="count">${counts[id].solved}/${counts[id].total}</span></a>`).join("");
+  const open = user || entered;
+  $("tabs").innerHTML = open ? LANGS.map(([id, name]) =>
+    `<a href="#/learn/${id}" class="${id === lang ? "active" : ""}">${name}<span class="count">${counts[id].solved}/${counts[id].total}</span></a>`).join("") : "";
   $("auth").innerHTML = (authNote ? `<span class="note">${esc(authNote)}</span>` : "") + (user
     ? `<span class="login">@${esc(user.login)}</span><button class="btn small" id="signout">Выйти</button>`
-    : `<span class="guest">Гость — прогресс не сохраняется</span><button class="btn small primary" data-signin>Войти через GitHub</button>`);
+    : entered && !landing
+      ? `<span class="guest-pill"><span class="guest-label">Гость<span class="long"> · прогресс не сохраняется</span></span><button class="btn small primary" data-signin><span class="long">Войти через GitHub</span><span class="short">Войти</span></button></span>`
+      : "");
   $("signout")?.addEventListener("click", signOut);
 }
 
 async function signIn() {
-  if (!supabase) {
-    authNote = authDone ? "Вход недоступен: не удалось загрузить Supabase. Проверь сеть и обнови страницу." : "Вход ещё загружается — попробуй через секунду.";
+  if (!supabase || !authDone) {
+    authNote = authDone ? "Вход недоступен: не удалось загрузить Supabase. Проверь сеть и обнови страницу." : "Вход ещё загружается, попробуй через секунду";
     return renderHeader();
   }
   try { await progress.signIn(); }
@@ -78,7 +88,9 @@ async function signIn() {
 async function signOut() {
   try { await progress.signOut(); } catch {}
   authNote = "";
-  render();
+  setEntered(false);
+  if (location.hash === "#/" || !location.hash) render();
+  else location.hash = "#/";
 }
 
 document.addEventListener("click", e => { if (e.target.closest("[data-signin]")) signIn(); });
@@ -110,7 +122,12 @@ function renderLanding() {
     </section>`;
   const dlg = $("guest-dlg");
   $("guest")?.addEventListener("click", () => { dlg.returnValue = ""; dlg.showModal(); });
-  dlg.addEventListener("close", () => { if (dlg.returnValue === "ok") location.hash = `#/learn/${lastLang}`; });
+  dlg.addEventListener("close", () => {
+    if (dlg.returnValue !== "ok") return;
+    setEntered(true);
+    if (parseRoute(location.hash).page !== "landing") return render();
+    location.hash = `#/learn/${lastLang}`;
+  });
 }
 
 // ---------- Каталог ----------
@@ -268,9 +285,12 @@ function render() {
   const lang = route.page === "catalog" ? route.lang : route.page === "task" ? route.id.split("/")[0] : null;
   if (isLang(lang)) lastLang = lang;
   view = null;
-  document.body.classList.toggle("fit", route.page === "task");
-  renderHeader(lang);
-  if (route.page === "landing") renderLanding();
+  const gated = route.page !== "landing" && !progress.user() && !entered;
+  loadingShown = gated && !authDone;
+  document.body.classList.toggle("fit", route.page === "task" && !gated);
+  renderHeader(lang, route.page === "landing" || gated);
+  if (loadingShown) $("main").innerHTML = '<p class="empty">Загрузка…</p>';
+  else if (route.page === "landing" || gated) renderLanding();
   else if (route.page === "catalog") renderCatalog(route);
   else renderTask(route.id);
   scrollTo(0, 0);
@@ -279,15 +299,16 @@ function render() {
 async function authenticate(authError) {
   try { supabase = await withTimeout(createSupabase(), 15000); } catch { supabase = null; }
   let next = progress;
+  const seed = progress.snapshot();
   if (supabase) {
     // сетевой сбой не блокирует сайт: работаем как гость и говорим об этом
-    next = createProgress({ supabase });
+    next = createProgress({ supabase, seed });
     try {
       await withTimeout(next.init(), 15000);
       // ошибка select приходит как {error}, не исключение: иначе первая же правка затёрла бы серверный черновик
       if (next.user() && next.saveState() === "error") throw new Error("progress load failed");
     } catch {
-      next = createProgress({ supabase });
+      next = createProgress({ supabase, seed });
       authNote = "не удалось загрузить прогресс";
     }
   }
@@ -297,7 +318,7 @@ async function authenticate(authError) {
   authDone = true;
   const changed = next.user() || next.solvedIds().size || authNote;
   progress = next;
-  if (changed) render();
+  if (changed || loadingShown) render();
 }
 
 async function boot() {

@@ -110,7 +110,11 @@ body.fit main { min-height: 0; display: flex; }
 .tabs a.active { background: var(--accent); color: var(--on-accent); }
 .tabs .count { margin-left: 6px; font-size: 12px; opacity: .7; font-variant-numeric: tabular-nums; }
 .auth { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 10px; font-size: 13px; }
-.auth .guest, .auth .note { color: var(--muted); }
+.auth .note { color: var(--muted); }
+.guest-pill { display: inline-flex; align-items: center; gap: 8px; padding: 2px 2px 2px 12px; border: 1px solid var(--line);
+              border-radius: 999px; background: var(--bg); color: var(--muted); white-space: nowrap; }
+.guest-pill .btn { border-radius: 999px; }
+.guest-pill .short { display: none; }
 .auth .note { color: var(--err); }
 .auth .login { font-weight: 600; }
 
@@ -169,6 +173,10 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
 @media (max-width: 900px) {
   .top { flex-wrap: wrap; gap: 6px 12px; padding: 8px 12px; }
   .tabs { order: 3; flex-basis: 100%; }
+  .tabs:empty { display: none; }
+  .auth { margin-left: auto; }
+  .guest-pill .long { display: none; }
+  .guest-pill .short { display: inline; }
   body.fit { height: auto; }
   body.fit main { display: block; }
   .task { grid-template-columns: minmax(0, 1fr); }
