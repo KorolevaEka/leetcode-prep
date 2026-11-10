@@ -1,0 +1,14 @@
+{
+  "title": "Что изменилось в конфиге",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "операции над dict.keys(): & и -"
+  ],
+  "mutants": {
+    "no-changed": "значения не сравниваются: changed всегда пустой",
+    "changed-includes-added": "новые ключи попадают ещё и в changed",
+    "swapped": "added и removed перепутаны",
+    "unsorted": "ключи отдаются в порядке словаря, а не по алфавиту"
+  }
+}

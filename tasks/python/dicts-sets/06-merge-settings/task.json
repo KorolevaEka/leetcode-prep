@@ -1,0 +1,13 @@
+{
+  "title": "Настройки окружения с переопределениями",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "dict.pop(key, None)"
+  ],
+  "mutants": {
+    "mutates-input": "меняет словарь defaults на месте",
+    "none-kept": "значение None попадает в результат вместо удаления ключа",
+    "drops-falsy": "0, False и пустая строка тоже удаляют ключ"
+  }
+}

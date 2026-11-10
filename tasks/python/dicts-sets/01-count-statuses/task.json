@@ -3,9 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "dict.get(key, 0)",
-    "цикл for",
-    "collections.Counter (по желанию)"
+    "dict.get(key, 0)"
   ],
   "mutants": {
     "undercounts-first": "первое вхождение каждого статуса не считается",

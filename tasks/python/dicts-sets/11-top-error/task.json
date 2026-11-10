@@ -1,0 +1,13 @@
+{
+  "title": "Самая частая ошибка",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "collections.Counter"
+  ],
+  "mutants": {
+    "tie-last": "при равной частоте выбирает ошибку, появившуюся позже",
+    "tie-alphabetical": "при равной частоте выбирает по алфавиту",
+    "crashes-on-empty": "падает на пустом списке"
+  }
+}
