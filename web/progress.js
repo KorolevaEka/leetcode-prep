@@ -104,7 +104,10 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       }));
       await supabase.auth.signInWithOAuth({
         provider: "github",
-        options: { redirectTo: location.origin + location.pathname + location.hash },
+        options: {
+          redirectTo: location.origin + location.pathname + location.hash,
+          queryParams: { prompt: "select_account" },
+        },
       });
     },
     flush,

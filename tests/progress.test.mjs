@@ -52,6 +52,7 @@ test("carry: signIn stores guest progress, init upserts it and clears key", asyn
   assert.deepEqual(JSON.parse(st.getItem("lct:guest-carry")), { solved: ["a", "b"], drafts: { a: "A", b: "B", c: "C" } });
   assert.equal(guest.oauth[0].provider, "github");
   assert.equal(guest.oauth[0].options.redirectTo, "https://h.io/lct/#/learn/sql");
+  assert.equal(guest.oauth[0].options.queryParams.prompt, "select_account");
 
   const sb = fakeSupabase({ session });
   const p = createProgress({ supabase: sb, storage: st });
