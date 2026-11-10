@@ -3,9 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "sorted(reverse=True)",
-    "срез [:n]",
-    "не менять исходный список"
+    "sorted(reverse=True)"
   ],
   "mutants": {
     "ascending": "возвращает самые быстрые, а не самые медленные",
