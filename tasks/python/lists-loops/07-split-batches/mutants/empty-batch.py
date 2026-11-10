@@ -1,0 +1,2 @@
+def split_batches(tests: list[str], size: int) -> list[list[str]]:
+    return [tests[i:i + size] for i in range(0, max(len(tests), 1), size)]

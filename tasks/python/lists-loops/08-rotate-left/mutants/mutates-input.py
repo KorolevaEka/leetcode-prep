@@ -1,0 +1,6 @@
+def rotate_left(queue: list[str], k: int) -> list[str]:
+    if not queue:
+        return []
+    k %= len(queue)
+    queue[:] = queue[k:] + queue[:k]
+    return queue

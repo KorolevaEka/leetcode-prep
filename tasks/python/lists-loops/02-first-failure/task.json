@@ -3,9 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "enumerate()",
-    "ранний return",
-    "-1, если не нашли"
+    "enumerate()"
   ],
   "mutants": {
     "last-failure": "возвращает индекс последнего упавшего теста, а не первого",
