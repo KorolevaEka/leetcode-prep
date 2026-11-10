@@ -1,0 +1,31 @@
+| NN | level | title | signature | rule / edge cases | technique | mutants |
+|----|-------|-------|-----------|-------------------|-----------|---------|
+| 04 | easy | Два теста в один слот | fits_pair(sorted durations, slot) -> bool | два разных элемента с суммой ровно slot; один элемент дважды нельзя; пусто/один -> False | сходящиеся указатели на отсортированном | reuses-element, stops-early, only-first |
+| 05 | easy | Пропущенные в конец | skipped_last(results) -> list | "skipped" в конец, остальные в исходном порядке | указатель записи (стабильное разбиение) | drops-skipped, sorts-others, skipped-first |
+| 06 | easy | Квадраты перекосов часов | skew_squares(sorted deltas with negatives) -> sorted squares | отрицательные/нули/пусто | два конца, заполнение с хвоста | no-sort, drops-negatives, fills-forward |
+| 07 | easy | Шаги сценария в логе | steps_in_order(steps, log) -> bool | подпоследовательность, повторы шагов, пустые steps True | два указателя по двум последовательностям | any-order, adjacent, reuses-event |
+| 08 | easy | Самая нагруженная минута | busiest_window(rps, k) -> int | макс. сумма k подряд; len<k -> 0; перф O(n) | окно фиксированной длины, обновление суммы | skips-last, slow, short-input |
+| 09 | easy | Развернуть до маркера | reverse_upto(items, stop) -> list | развернуть начало до первого stop включительно; нет stop -> без изменений | обмен с двух концов | last-marker, excludes-marker, reverses-all |
+| 10 | easy | Простой по краям | trim_idle(samples) -> list | убрать 0 в начале и конце, внутренние нули остаются; все нули -> [] | сжатие с двух сторон | drops-inner, only-leading, all-zero-keeps-one |
+| 11 | easy | Парные замеры | mirrored_sum(values, total) -> bool | values[i]+values[-1-i]==total для всех i; середина сама с собой; пусто True | концы навстречу | skip-middle, any-pair, first-pair-only |
+| 12 | easy | Общие id в двух выгрузках | common_ids(a, b) -> list | оба отсортированы, дубли; пересечение без повторов | слияние-пересечение | keeps-duplicates, stops-at-first-gap, drops-last |
+| 13 | medium | Самый длинный чистый участок | longest_clean_run(events) -> int | без повторов событий | окно + last-seen, прыжок left | stale-last-seen, reset-on-repeat, off-by-one |
+| 14 | medium | Пары в один слот | count_pairs_under(durations, limit) -> int | пары позиций i<j с суммой < limit, вход не отсортирован; перф | sort + сходящиеся, прибавка r-l | non-strict, counts-once, no-sort, slow |
+| 15 | medium | Три счётчика в сумму | triples_with_sum(values, target) -> list[tuple] | уникальные отсортированные тройки на разных позициях, дубли значений | sort + фиксировать первый + сходящиеся, пропуск дублей | duplicates, reuses-element, slow |
+| 16 | medium | Тесты по слотам | tests_that_fit(durations, slots) -> int | слот держит один тест, duration<=slot; максимум размещённых | жадное сопоставление двух отсортированных | strict, stops-at-first-miss, reuses-slot |
+| 17 | medium | Общие окна простоя | shared_windows(a, b, min_len) -> list[tuple] | пересечение двух списков [s,e), длина>=min_len | пересечение интервалов двумя указателями | inclusive-length, advance-both, ignores-min-len |
+| 18 | medium | Не больше k повторов | cap_repeats(sorted ids, k) -> list | каждое значение не более k раз; k=0 -> [] | указатель записи с look-back k | keeps-one, allows-extra, k-zero |
+| 19 | medium | Самая большая площадь | widest_pool(levels) -> int | max (j-i)*min(l[i],l[j]); перф | сходящиеся, двигаем меньший | adjacent-only, moves-taller, uses-max, slow |
+| 20 | medium | Ввод после стираний | same_after_typing(a, b) -> bool | '#' стирает предыдущий символ, в начале ничего | обход/стек со стиранием | hash-literal, deletes-two, no-empty-guard |
+| 21 | medium | Окна с теми же событиями | count_shuffled_windows(log, pattern) -> int | окна длины len(pattern), равные pattern как мультимножество; перф | окно фикс. длины со счётчиками | set-compare, skips-last, slow |
+| 22 | hard | Вода между столбиками | trapped_water(bars) -> int | сумма min(maxL,maxR)-bar; перф | сходящиеся с max с двух сторон | adjacent-max, one-sided, counts-edges, slow |
+| 23 | hard | Пик в каждом окне | window_peaks(values, k) -> list | max каждого окна k; перф | монотонная очередь | no-evict, skips-last, slow |
+| 24 | hard | Самый короткий повтор сценария | shortest_replay(log, steps) -> list | кратчайший непрерывный кусок с steps как подпоследовательность; ничья -> раньше | прямой проход + обратное сжатие | no-backward, last-on-tie, set-cover, skips-overlap |
+| 25 | hard | Склеенные имена тестов | find_chains(text, words) -> list[int] | слова одной длины, любая перестановка с повторами; пересекающиеся старты | окна по сдвигам L со счётчиками | ignores-counts, only-aligned, slow |
+| 26 | hard | Самый короткий всплеск | shortest_burst(deltas, target) -> int | кратчайший отрезок с суммой >= target, значения могут быть < 0; -1 | префиксные суммы + монотонная очередь | plain-window, first-found, strict, slow |
+| 27 | hard | Окно общего времени | smallest_common_range(streams) -> tuple/None | наименьший отрезок [lo,hi] с элементом из каждого списка; ничья -> меньший lo | k указателей + куча | ties-larger-lo, firsts-only, no-empty-check |
+| 28 | hard | Медиана в каждом окне | rolling_medians(values, k) -> list[float] | чётное k — среднее двух средних; перф | отсортированное окно, bisect | lower-median, unsorted-insert, skips-last, slow |
+| 29 | hard | k-я по малости разница | kth_gap(values, k) -> int | k-я из pairwise gaps, дубли дают 0; перф | бинарный поиск по ответу + два указателя | zero-indexed, strict-count, unique-values |
+| 30 | hard | Переключатели блоками | min_resets(flags, k) -> int | инвертировать k подряд, min операций чтобы все 1, иначе -1; перф | разностная чётность окна | no-tail-check, parity-never-expires, slow |
+
+Self-review: 27 новых задач — 9/9/9. Техники разные: сходящиеся (04, 11, 14, 19, 22), запись-указатель (05, 18), заполнение с хвоста (06), две последовательности (07, 12, 16, 17), окно фикс. (08, 21), окно переменное (13), обмен (09), сжатие (10), стёртый ввод (20), глубокие: очередь (23, 26), прямой+обратный (24), сдвиги (25), k-списков+куча (27), bisect (28), бинпоиск по ответу (29), разностная чётность (30). Hard-уровень — настоящие алгоритмы, не API-поиск.
