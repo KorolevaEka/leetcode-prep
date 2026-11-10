@@ -1,0 +1,12 @@
+{
+  "title": "Типы значений JSON",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "В Python bool является подклассом int."
+  ],
+  "mutants": {
+    "bool-number": "путает bool с числом",
+    "null-string": "считает null строкой"
+  }
+}

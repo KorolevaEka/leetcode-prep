@@ -1,0 +1,12 @@
+{
+  "title": "Тесты точного фильтра тегов",
+  "level": "easy",
+  "kind": "tests",
+  "hints": [
+    "Для Unicode casefold и lower могут различаться."
+  ],
+  "mutants": {
+    "substring": "ищет подстроку",
+    "lower": "не учитывает особенности Unicode-регистра"
+  }
+}
