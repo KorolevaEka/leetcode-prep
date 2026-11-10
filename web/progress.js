@@ -4,8 +4,10 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
   let user = null;
   const solved = new Set();
   const drafts = new Map();
+  const solvedCodes = new Map();
   for (const id of seed?.solved || []) solved.add(id);
   for (const [id, code] of Object.entries(seed?.drafts || {})) drafts.set(id, code);
+  for (const [id, code] of Object.entries(seed?.solvedCodes || {})) solvedCodes.set(id, code);
   const pending = new Map(); // id -> { code, solvedAt? } — ещё не записано на сервер
   let state = "saved";
   let timer = null;
@@ -15,6 +17,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
   const row = (id, p) => ({
     user_id: user.id, task_id: id, code: p.code, updated_at: new Date().toISOString(),
     ...(p.solvedAt ? { solved_at: p.solvedAt } : {}),
+    ...(p.solvedCode != null ? { solved_code: p.solvedCode } : {}),
   });
   const upsert = payload => supabase.from("progress").upsert(payload, { onConflict: "user_id,task_id" });
 
@@ -47,21 +50,24 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       const carry = stored || seed ? {
         solved: [...new Set([...(stored?.solved || []), ...(seed?.solved || [])])],
         drafts: { ...(stored?.drafts || {}), ...(seed?.drafts || {}) },
+        solvedCodes: { ...(stored?.solvedCodes || {}), ...(seed?.solvedCodes || {}) },
       } : null;
       if (!session) {
         for (const id of carry?.solved || []) solved.add(id);
         for (const [id, code] of Object.entries(carry?.drafts || {})) drafts.set(id, code);
+        for (const [id, code] of Object.entries(carry?.solvedCodes || {})) solvedCodes.set(id, code);
         storage.removeItem(CARRY_KEY);
         return null;
       }
       user = { login: session.user.user_metadata?.user_name, id: session.user.id };
-      const { data: rows, error: selectError } = await supabase.from("progress").select("task_id, code, solved_at");
+      const { data: rows, error: selectError } = await supabase.from("progress").select("task_id, code, solved_at, solved_code");
       if (selectError) { state = "error"; return { login: user.login }; }
       const server = new Map();
       for (const r of rows || []) {
         server.set(r.task_id, r);
         if (r.solved_at) solved.add(r.task_id);
         if (r.code != null) drafts.set(r.task_id, r.code);
+        if (r.solved_code != null) solvedCodes.set(r.task_id, r.solved_code);
       }
       if (carry) {
         const now = new Date().toISOString();
@@ -71,7 +77,11 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
           const srv = server.get(id);
           if (srv?.solved_at) continue;
           if (carry.solved.includes(id)) {
-            withSolved.push({ user_id: user.id, task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now });
+            const passing = srv?.solved_code != null ? null : carry.solvedCodes[id] ?? carry.drafts[id] ?? null;
+            withSolved.push({
+              user_id: user.id, task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now,
+              ...(passing != null ? { solved_code: passing } : {}),
+            });
           } else if (!srv) {
             codeOnly.push({ user_id: user.id, task_id: id, code: carry.drafts[id], updated_at: now });
           }
@@ -83,6 +93,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
           if (error) { failed = true; continue; }
           for (const r of group) {
             if (r.solved_at) solved.add(r.task_id);
+            if (r.solved_code != null) solvedCodes.set(r.task_id, r.solved_code);
             if (r.code != null) drafts.set(r.task_id, r.code);
           }
         }
@@ -101,6 +112,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       storage.setItem(CARRY_KEY, JSON.stringify({
         solved: [...new Set([...(old?.solved || []), ...solved])],
         drafts: { ...(old?.drafts || {}), ...Object.fromEntries(drafts) },
+        solvedCodes: { ...(old?.solvedCodes || {}), ...Object.fromEntries(solvedCodes) },
       }));
       await supabase.auth.signInWithOAuth({
         provider: "github",
@@ -114,23 +126,24 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
     async signOut() {
       try { await flush(); } catch {}
       await supabase.auth.signOut();
-      user = null; solved.clear(); drafts.clear(); pending.clear(); clearTimeout(timer);
+      user = null; solved.clear(); drafts.clear(); solvedCodes.clear(); pending.clear(); clearTimeout(timer);
     },
     carryFailed: () => carryFailed,
     absorb(snap) {
-      for (const id of snap.solved) if (!solved.has(id)) this.markSolved(id, snap.drafts[id] ?? "");
+      for (const id of snap.solved) if (!solved.has(id)) this.markSolved(id, snap.solvedCodes?.[id] ?? snap.drafts[id] ?? "");
       for (const [id, code] of Object.entries(snap.drafts)) if (!drafts.has(id)) this.saveDraft(id, code);
     },
-    snapshot: () => ({ solved: [...solved], drafts: Object.fromEntries(drafts) }),
+    snapshot: () => ({ solved: [...solved], drafts: Object.fromEntries(drafts), solvedCodes: Object.fromEntries(solvedCodes) }),
     user: () => user,
     isSolved: id => solved.has(id),
     solvedIds: () => new Set(solved),
     getDraft: id => drafts.get(id),
+    getSolvedCode: id => solvedCodes.get(id),
     saveState: () => state,
     saveDraft(id, code) {
       drafts.set(id, code);
       if (!user) return;
-      pending.set(id, { code, solvedAt: pending.get(id)?.solvedAt });
+      pending.set(id, { code, solvedAt: pending.get(id)?.solvedAt, solvedCode: pending.get(id)?.solvedCode });
       state = "saving";
       clearTimeout(timer);
       timer = setTimeout(flush, debounceMs);
@@ -138,8 +151,10 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
     async markSolved(id, code) {
       solved.add(id);
       drafts.set(id, code);
+      const first = !solvedCodes.has(id);
+      if (first) solvedCodes.set(id, code);
       if (!user) return;
-      pending.set(id, { code, solvedAt: new Date().toISOString() });
+      pending.set(id, { code, solvedAt: new Date().toISOString(), solvedCode: first ? code : undefined });
       await flush();
     },
   };

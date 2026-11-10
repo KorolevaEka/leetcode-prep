@@ -22,7 +22,7 @@ body { margin: 0; background: var(--bg); color: var(--text);
 .readme pre { padding: 10px 12px; overflow-x: auto; }
 .readme pre code { padding: 0; }
 .work { display: flex; flex-direction: column; min-height: 0; padding: 16px; gap: 12px; }
-.bar { display: flex; gap: 8px; align-items: center; }
+.bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bar .file { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 13px; margin-right: auto; }
 .editor { flex: 1 1 60%; min-height: 200px; position: relative; }
 .CodeMirror { position: absolute; inset: 0; height: auto; border-radius: 8px; border: 1px solid var(--line);
@@ -180,7 +180,6 @@ select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid 
   .task { grid-template-columns: minmax(0, 1fr); }
   .readme { border-right: 0; padding: 16px; overflow: visible; }
   .work { padding: 12px; }
-  .bar { flex-wrap: wrap; }
   .editor { min-height: 50vh; }
   .subject { min-height: 0; }
   .subject .editor { min-height: 30vh; }

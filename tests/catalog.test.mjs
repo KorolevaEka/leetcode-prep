@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { blocker, catalog, langCounts, nextTask } from "../web/catalog.js";
+import { blocker, catalog, langCounts, nextTask, prevTask } from "../web/catalog.js";
 
 const t = (id, level, order, extra = {}) =>
   ({ id: `python/arrays/${id}`, lang: "python", topic: "arrays", order, level, kind: "code", title: id, ...extra });
@@ -50,4 +50,11 @@ test("nextTask picks the next open task in the topic, wrapping to earlier ones",
 test("blocker is the first unsolved task of the same level chain", () => {
   assert.equal(blocker(h2, tasks, new Set()).id, h1.id);
   assert.equal(blocker(e2, tasks, new Set()).id, e1.id);
+});
+
+test("prevTask is the previous task of the topic, no wrap-around", () => {
+  assert.equal(prevTask(e2, tasks).id, e1.id);
+  assert.equal(prevTask(h1, tasks).id, e2.id);
+  assert.equal(prevTask(e1, tasks), null);
+  assert.equal(prevTask(s1, tasks), null);
 });

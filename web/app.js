@@ -9,7 +9,7 @@ import { parseRoute, cleanAuthParams } from "./router.js";
 import { createProgress } from "./progress.js";
 import { createSupabase } from "./config.js";
 import { taskState } from "./unlock.js";
-import { LANGS, LEVELS, blocker, catalog, langCounts, nextTask } from "./catalog.js";
+import { LANGS, LEVELS, blocker, catalog, langCounts, nextTask, prevTask } from "./catalog.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -197,6 +197,8 @@ function renderTask(id) {
         <div class="bar">
           <span class="file">${FILE[t.kind][t.lang]}</span>
           <span class="save muted" id="save"></span>
+          <button class="btn" id="restore" title="Вернуть первое решение, которое прошло тесты" hidden>↩ Рабочее решение</button>
+          <a class="btn" id="prev" hidden></a>
           <a class="btn" id="next" hidden></a>
           <button class="btn primary" id="run">Запустить ⌘↵</button>
         </div>
@@ -212,7 +214,11 @@ function renderTask(id) {
   });
   const v = view = { task: t, editor };
   const hints = () => renderHints($("hints"), editor, t, "Подсказки — необязательно использовать все, это только наводка:");
-  editor.on("change", () => { progress.saveDraft(t.id, editor.getValue()); hints(); updateSave(); });
+  editor.on("change", () => { progress.saveDraft(t.id, editor.getValue()); hints(); updateSave(); updateRestore(); });
+  const p = prevTask(t, tasks);
+  if (p) { $("prev").href = `#/task/${p.id}`; $("prev").textContent = "← Предыдущая задача"; $("prev").hidden = false; }
+  $("restore").onclick = () => { editor.setValue(progress.getSolvedCode(t.id)); editor.focus(); };
+  updateRestore();
   hints();
   if (!matchMedia("(pointer: coarse)").matches) editor.focus();
   $("run").onclick = run;
@@ -232,6 +238,11 @@ function renderTask(id) {
 function updateSave() {
   const el = $("save");
   if (el) el.textContent = view && progress.user() ? SAVE_TEXT[progress.saveState()] : "";
+}
+
+function updateRestore() {
+  const code = view && progress.getSolvedCode(view.task.id);
+  $("restore").hidden = code == null || code === view.editor.getValue();
 }
 
 function showNext(v) {
@@ -275,6 +286,7 @@ async function run() {
   showResult(r);
   if (matchMedia("(max-width: 900px)").matches) $("out").scrollIntoView({ block: "nearest" });
   if (r.ok) showNext(v);
+  updateRestore();
   updateSave();
 }
 

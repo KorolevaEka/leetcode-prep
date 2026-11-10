@@ -37,6 +37,11 @@ export function nextTask(task, tasks, solved) {
   return topic.slice(i + 1).find(open) ?? topic.slice(0, Math.max(i, 0)).find(open) ?? null;
 }
 
+export function prevTask(task, tasks) {
+  const topic = tasks.filter(t => t.lang === task.lang && t.topic === task.topic).sort(byLevelOrder);
+  return topic[topic.findIndex(t => t.id === task.id) - 1] ?? null;
+}
+
 // Для закрытой задачи — та, что надо решить сначала: первая нерешённая в её цепочке.
 export function blocker(task, tasks, solved) {
   return tasks.filter(t => t.lang === task.lang && t.topic === task.topic && t.level === task.level)

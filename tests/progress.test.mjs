@@ -49,7 +49,7 @@ test("carry: signIn stores guest progress, init upserts it and clears key", asyn
   await g.markSolved("b", "B");
   g.saveDraft("c", "C");
   await g.signIn();
-  assert.deepEqual(JSON.parse(st.getItem("lct:guest-carry")), { solved: ["a", "b"], drafts: { a: "A", b: "B", c: "C" } });
+  assert.deepEqual(JSON.parse(st.getItem("lct:guest-carry")), { solved: ["a", "b"], drafts: { a: "A", b: "B", c: "C" }, solvedCodes: { a: "A", b: "B" } });
   assert.equal(guest.oauth[0].provider, "github");
   assert.equal(guest.oauth[0].options.redirectTo, "https://h.io/lct/#/learn/sql");
   assert.equal(guest.oauth[0].options.queryParams.prompt, "select_account");
@@ -258,7 +258,7 @@ test("snapshot returns solved ids and drafts", async () => {
   await p.init();
   await p.markSolved("a", "A");
   p.saveDraft("b", "B");
-  assert.deepEqual(p.snapshot(), { solved: ["a"], drafts: { a: "A", b: "B" } });
+  assert.deepEqual(p.snapshot(), { solved: ["a"], drafts: { a: "A", b: "B" }, solvedCodes: { a: "A" } });
 });
 
 test("seed: no session keeps pre-auth guest work", async () => {
@@ -288,7 +288,7 @@ test("seed merge upsert failure writes carry back for retry", async () => {
   const p = createProgress({ supabase: fakeSupabase({ session, failUpserts: 2 }), storage: st, seed: { solved: ["a"], drafts: { a: "A" } } });
   await p.init();
   assert.equal(p.carryFailed(), true);
-  assert.deepEqual(JSON.parse(st.getItem("lct:guest-carry")), { solved: ["a"], drafts: { a: "A" } });
+  assert.deepEqual(JSON.parse(st.getItem("lct:guest-carry")), { solved: ["a"], drafts: { a: "A" }, solvedCodes: {} });
   const f2 = fakeSupabase({ session });
   const q = createProgress({ supabase: f2, storage: st });
   await q.init();
@@ -304,4 +304,64 @@ test("absorb adds late guest work without overriding", async () => {
   p.absorb({ solved: ["a"], drafts: { a: "A", x: "X0" } });
   assert.equal(p.isSolved("a"), true);
   assert.equal(p.getDraft("x"), "X1");
+});
+
+test("solved_code: first pass is saved, a later pass neither overwrites nor sends it", async () => {
+  const sb = fakeSupabase({ session });
+  const p = createProgress({ supabase: sb, storage: memStorage(), debounceMs: 10 });
+  await p.init();
+  await p.markSolved("a", "first");
+  assert.equal(p.getSolvedCode("a"), "first");
+  assert.equal(sb.upserts.at(-1).payload.solved_code, "first");
+  await p.markSolved("a", "second");
+  assert.equal(p.getSolvedCode("a"), "first");
+  assert.ok(!("solved_code" in sb.upserts.at(-1).payload));
+  assert.equal(p.getDraft("a"), "second");
+});
+
+test("solved_code: guest keeps it in memory", async () => {
+  const p = createProgress({ supabase: fakeSupabase(), storage: memStorage() });
+  await p.init();
+  assert.equal(p.getSolvedCode("a"), undefined);
+  await p.markSolved("a", "A");
+  await p.markSolved("a", "B");
+  assert.equal(p.getSolvedCode("a"), "A");
+});
+
+test("solved_code: saveDraft never sends it", async () => {
+  const sb = fakeSupabase({ session });
+  const p = createProgress({ supabase: sb, storage: memStorage(), debounceMs: 10 });
+  await p.init();
+  p.saveDraft("a", "x");
+  await wait(40);
+  assert.ok(!("solved_code" in sb.upserts[0].payload));
+});
+
+test("solved_code: init loads it; legacy null stays unknown until the next pass", async () => {
+  const sb = fakeSupabase({ session, rows: [
+    { task_id: "a", code: "D", solved_at: "2026-01-01", solved_code: "W" },
+    { task_id: "b", code: "D", solved_at: "2026-01-01", solved_code: null },
+  ] });
+  const p = createProgress({ supabase: sb, storage: memStorage() });
+  await p.init();
+  assert.equal(p.getSolvedCode("a"), "W");
+  assert.equal(p.getSolvedCode("b"), undefined);
+  await p.markSolved("b", "NEW");
+  assert.equal(p.getSolvedCode("b"), "NEW");
+  assert.equal(sb.upserts.at(-1).payload.solved_code, "NEW");
+});
+
+test("solved_code: carry sets it only when the server has none", async () => {
+  const { rows, p } = await initWith(JSON.stringify({ solved: ["a", "b"], drafts: { a: "GA2", b: "GB2" }, solvedCodes: { a: "GA", b: "GB" } }), {
+    rows: [
+      { task_id: "a", code: "S", solved_at: null, solved_code: "KEEP" },
+      { task_id: "b", code: "S", solved_at: null, solved_code: null },
+    ],
+  });
+  const a = rows.find(r => r.task_id === "a");
+  const b = rows.find(r => r.task_id === "b");
+  assert.ok(!("solved_code" in a));
+  assert.equal(b.solved_code, "GB");
+  assert.equal(p.getSolvedCode("a"), "KEEP");
+  assert.equal(p.getSolvedCode("b"), "GB");
 });
