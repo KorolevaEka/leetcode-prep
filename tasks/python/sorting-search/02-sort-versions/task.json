@@ -1,11 +1,9 @@
 {
   "title": "Сортировка версий",
-  "level": "medium",
+  "level": "easy",
   "kind": "code",
   "hints": [
-    "sorted(key=)",
-    "str.split('.')",
-    "tuple(map(int, ...))"
+    "sorted(key=)"
   ],
   "mutants": {
     "lexicographic": "сравнивает версии как обычные строки",
