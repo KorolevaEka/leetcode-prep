@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 EXT = {"python": "py", "sql": "sql", "ts": "ts", "java": "java"}
 LEVELS = {"easy", "medium", "hard"}
 KINDS = {"code", "tests"}
+INDEX_KEYS = ("id", "lang", "topic", "order", "level", "kind", "title")
 
 
 class TaskFormatError(Exception):
@@ -84,10 +85,18 @@ def load_tasks(root: Path = ROOT) -> list[dict]:
     return out
 
 
+def index_record(task: dict) -> dict:
+    return {k: task[k] for k in INDEX_KEYS}
+
+
 def build_site(root: Path, out: Path) -> None:
     tasks = load_tasks(root)
     shutil.copytree(root / "web", out, dirs_exist_ok=True)
-    (out / "tasks.json").write_text(json.dumps(tasks, ensure_ascii=False))
+    (out / "tasks.json").write_text(json.dumps([index_record(t) for t in tasks], ensure_ascii=False))
+    for t in tasks:
+        f = out / "tasks" / f"{t['id']}.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(t, ensure_ascii=False))
     shutil.copy(root / "topics.json", out / "topics.json")
 
 

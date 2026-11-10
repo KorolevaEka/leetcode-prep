@@ -139,3 +139,17 @@ def test_build_site(root, tmp_path_factory):
     assert (out / "index.html").read_text() == "hi"
     assert json.loads((out / "tasks.json").read_text())[0]["id"] == "python/strings/01-x"
     assert "python" in json.loads((out / "topics.json").read_text())
+
+
+def test_build_site_index_and_details(root, tmp_path_factory):
+    make_task(root, "python", "strings", "02-y", level="hard")
+    make_task(root, "python", "strings", "01-x", kind="tests")
+    (root / "web").mkdir()
+    out = tmp_path_factory.mktemp("out")
+    build_site(root, out)
+    index = json.loads((out / "tasks.json").read_text())
+    assert [t["id"] for t in index] == ["python/strings/01-x", "python/strings/02-y"]
+    for t in index:
+        assert set(t) == {"id", "lang", "topic", "order", "level", "kind", "title"}
+    for full in load_tasks(root):
+        assert json.loads((out / "tasks" / f"{full['id']}.json").read_text()) == full

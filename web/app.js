@@ -36,6 +36,15 @@ const setEntered = on => {
   try { on ? sessionStorage.setItem(ENTERED, "guest") : sessionStorage.removeItem(ENTERED); } catch {}
 };
 
+const details = new Map();
+const loadDetail = id => {
+  if (!details.has(id)) details.set(id, fetch(`tasks/${id}.json`).then(r => {
+    if (!r.ok) throw new Error(`${r.status}`);
+    return r.json();
+  }).catch(e => { details.delete(id); throw e; }));
+  return details.get(id);
+};
+
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 
 // ---------- Исполнители ----------
@@ -168,6 +177,11 @@ function renderCatalog(route) {
 }
 
 // ---------- Задача ----------
+const backLink = t => {
+  const topic = (topics[t.lang] || []).find(tp => tp.id === t.topic);
+  return `<a class="back" href="#/learn/${t.lang}?topic=${t.topic}">← ${esc(topic?.title || t.topic)}</a>`;
+};
+
 function renderTask(id) {
   const t = tasks.find(x => x.id === id);
   const main = $("main");
@@ -176,19 +190,30 @@ function renderTask(id) {
     return;
   }
   const solved = progress.solvedIds();
-  const topic = (topics[t.lang] || []).find(tp => tp.id === t.topic);
-  const back = `<a class="back" href="#/learn/${t.lang}?topic=${t.topic}">← ${esc(topic?.title || t.topic)}</a>`;
+  const back = backLink(t);
   if (taskState(t, tasks, solved) === "locked") {
     const b = blocker(t, tasks, solved);
     main.innerHTML = `<section class="stub">${back}<h1>🔒 ${esc(t.title)}</h1>
       <p>Сначала реши предыдущую задачу этого уровня${b ? `: <a href="#/task/${b.id}">${esc(b.title)}</a>` : ""}.</p></section>`;
     return;
   }
+  main.innerHTML = '<p class="empty">Загружаю задачу…</p>';
+  const load = () => loadDetail(id).then(full => { if (view === null && location.hash === `#/task/${id}`) openTask(full); })
+    .catch(e => {
+      if (location.hash !== `#/task/${id}`) return;
+      main.innerHTML = `<section class="stub">${back}<p class="empty">Не удалось загрузить задачу: ${esc(e.message)}. <button class="btn" id="retry">Повторить</button></p></section>`;
+      $("retry").onclick = () => { main.innerHTML = '<p class="empty">Загружаю задачу…</p>'; load(); };
+    });
+  load();
+}
+
+function openTask(t) {
+  const main = $("main"), solved = progress.solvedIds();
   const tests = t.kind === "tests";
   main.innerHTML = `
     <div class="task">
       <section class="readme">
-        ${back}
+        ${backLink(t)}
         <div class="badges"><span class="badge ${t.level}">${LEVEL_NAME[t.level]}</span>${tests ? '<span class="badge tests">тесты</span>' : ""}</div>
         ${md(t.readme)}<div id="schema"></div>
       </section>

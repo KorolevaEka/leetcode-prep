@@ -1,10 +1,11 @@
 """Локальный сервер: python3 scripts/serve.py -> http://localhost:8000
-Отдаёт web/, topics.json и живой tasks.json (собирается на каждый запрос)."""
+Отдаёт web/, topics.json, живой индекс /tasks.json и /tasks/<id>.json (собираются на каждый запрос)."""
 import json
 import mimetypes
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import unquote
 
-from build import ROOT, TaskFormatError, load_tasks
+from build import ROOT, TaskFormatError, index_record, load_tasks
 
 WEB = (ROOT / "web").resolve()
 
@@ -19,11 +20,17 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0]
-        if path == "/tasks.json":
+        if path == "/tasks.json" or (path.startswith("/tasks/") and path.endswith(".json")):
             try:
-                return self.send(200, json.dumps(load_tasks(), ensure_ascii=False).encode())
+                tasks = load_tasks()
             except TaskFormatError as e:
                 return self.send(500, json.dumps({"error": str(e)}, ensure_ascii=False).encode())
+            if path == "/tasks.json":
+                return self.send(200, json.dumps([index_record(t) for t in tasks], ensure_ascii=False).encode())
+            found = next((t for t in tasks if t["id"] == unquote(path[len("/tasks/"):-len(".json")])), None)
+            if found:
+                return self.send(200, json.dumps(found, ensure_ascii=False).encode())
+            return self.send(404, b"{}")
         if path == "/topics.json":
             return self.send(200, (ROOT / "topics.json").read_bytes())
         f = (WEB / path.lstrip("/") / "index.html").resolve() if path.endswith("/") else (WEB / path.lstrip("/")).resolve()

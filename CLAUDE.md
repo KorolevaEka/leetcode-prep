@@ -10,7 +10,7 @@ Python, SQL, TypeScript, Java. Код выполняется прямо в бр�
 - `tasks/<lang>/<topic>/<NN>-<slug>/` — банк задач (`lang` ∈ `python|sql|ts|java`).
 - `topics.json` — порядок и названия тем по языкам: `{ "python": [{ "id", "title", "description" }], "sql": [...], ... }`.
 - `web/` — всё, что уходит на сайт (HTML/JS/CSS, раннеры в `web/runners/`).
-- `scripts/` — `build.py` (собирает `_site/` и `tasks.json`), `serve.py` (локальный сервер), `verify.mjs` (проверка задач, исполнители в `scripts/executors/`).
+- `scripts/` — `build.py` (собирает `_site/`: лёгкий индекс `tasks.json` и полные записи `tasks/<id>.json`, грузятся по требованию), `serve.py` (локальный сервер), `verify.mjs` (проверка задач, исполнители в `scripts/executors/`).
 - `tests/` — тесты платформы: `test_build.py` (pytest), `*.test.mjs` (`node --test`).
 
 ## Формат задачи
