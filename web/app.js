@@ -65,7 +65,7 @@ function renderHeader(lang = headerLang, landing = headerLanding) {
   headerLanding = landing;
   const counts = langCounts(tasks, progress.solvedIds());
   const user = progress.user();
-  const open = user || entered;
+  const open = (user || entered) && !landing;
   $("tabs").innerHTML = open ? LANGS.map(([id, name]) =>
     `<a href="#/learn/${id}" class="${id === lang ? "active" : ""}">${name}<span class="count">${counts[id].solved}/${counts[id].total}</span></a>`).join("") : "";
   $("auth").innerHTML = (authNote ? `<span class="note">${esc(authNote)}</span>` : "") + (user
