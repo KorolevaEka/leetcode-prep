@@ -77,10 +77,10 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
           const srv = server.get(id);
           if (srv?.solved_at) continue;
           if (carry.solved.includes(id)) {
-            const passing = srv?.solved_code != null ? null : carry.solvedCodes[id] ?? carry.drafts[id] ?? null;
+            const passing = srv?.solved_code ?? carry.solvedCodes[id] ?? carry.drafts[id] ?? null;
             withSolved.push({
               user_id: user.id, task_id: id, code: carry.drafts[id] ?? srv?.code ?? null, updated_at: now, solved_at: now,
-              ...(passing != null ? { solved_code: passing } : {}),
+              solved_code: passing,
             });
           } else if (!srv) {
             codeOnly.push({ user_id: user.id, task_id: id, code: carry.drafts[id], updated_at: now });
@@ -154,7 +154,7 @@ export function createProgress({ supabase, storage = globalThis.sessionStorage, 
       const first = !solvedCodes.has(id);
       if (first) solvedCodes.set(id, code);
       if (!user) return;
-      pending.set(id, { code, solvedAt: new Date().toISOString(), solvedCode: first ? code : undefined });
+      pending.set(id, { code, solvedAt: new Date().toISOString(), solvedCode: first ? code : pending.get(id)?.solvedCode });
       await flush();
     },
   };

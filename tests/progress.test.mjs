@@ -360,8 +360,17 @@ test("solved_code: carry sets it only when the server has none", async () => {
   });
   const a = rows.find(r => r.task_id === "a");
   const b = rows.find(r => r.task_id === "b");
-  assert.ok(!("solved_code" in a));
+  assert.equal(a.solved_code, "KEEP");
   assert.equal(b.solved_code, "GB");
   assert.equal(p.getSolvedCode("a"), "KEEP");
   assert.equal(p.getSolvedCode("b"), "GB");
+});
+
+test("solved_code: a failed first pass keeps it queued across a second pass", async () => {
+  const sb = fakeSupabase({ session, failUpserts: 1 });
+  const p = createProgress({ supabase: sb, storage: memStorage(), debounceMs: 10 });
+  await p.init();
+  await p.markSolved("a", "first");
+  await p.markSolved("a", "second");
+  assert.equal(sb.upserts.at(-1).payload.solved_code, "first");
 });
