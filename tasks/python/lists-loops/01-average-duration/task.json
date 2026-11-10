@@ -3,9 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "sum() и len()",
-    "проверка пустого списка",
-    "round(x, 2)"
+    "sum() и len()"
   ],
   "mutants": {
     "crash-on-empty": "падает на пустом списке (деление на ноль)",

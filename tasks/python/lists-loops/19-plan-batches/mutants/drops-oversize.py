@@ -1,0 +1,13 @@
+def plan_batches(durations: list[int], limit: int) -> list[list[int]]:
+    batches, current, total = [], [], 0
+    for d in durations:
+        if d > limit:
+            continue
+        if current and total + d > limit:
+            batches.append(current)
+            current, total = [], 0
+        current.append(d)
+        total += d
+    if current:
+        batches.append(current)
+    return batches
