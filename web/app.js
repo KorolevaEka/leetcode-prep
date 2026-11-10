@@ -141,13 +141,40 @@ function renderLanding() {
 
 // ---------- Каталог ----------
 const STATE = { solved: ["✓", "решена"], open: ["○", "открыта"], locked: ["🔒", "закрыта"] };
-const taskItem = ({ task, state }) => `
+const taskItem = ({ task, state }, note = true) => `
   <li class="${state}"><a href="#/task/${task.id}">
     <span class="mark" title="${STATE[state][1]}" aria-label="${STATE[state][1]}">${STATE[state][0]}</span>
-    <span class="name">${esc(task.title)}${state === "locked" ? '<span class="lock-note">Сначала реши предыдущую задачу этого уровня</span>' : ""}</span>
+    <span class="name">${esc(task.title)}${state === "locked" && note ? '<span class="lock-note">Сначала реши предыдущую задачу этого уровня</span>' : ""}</span>
     ${task.kind === "tests" ? '<span class="badge tests">тесты</span>' : ""}
     <span class="badge ${task.level}">${LEVEL_NAME[task.level]}</span>
   </a></li>`;
+
+const foldState = new Map();
+const isOpen = (key, byDefault) => foldState.get(key) ?? byDefault;
+
+function topicCard(c, lang, openByDefault) {
+  const key = `${lang}/${c.topic.id}`;
+  const groups = LEVELS.map(([lv]) => ({ lv, items: c.items.filter(i => i.task.level === lv) })).filter(g => g.items.length);
+  const current = groups.find(g => g.items.some(i => i.state === "open"))?.lv;
+  const counts = groups.map(g => `${LEVEL_NAME[g.lv]} ${g.items.filter(i => i.state === "solved").length}/${g.items.length}`).join(" · ");
+  const levelGroup = g => {
+    const lkey = `${key}/${g.lv}`;
+    const done = g.items.filter(i => i.state === "solved").length;
+    const firstLocked = g.items.findIndex(i => i.state === "locked");
+    return `<details class="level" data-key="${lkey}" ${isOpen(lkey, groups.length === 1 || g.lv === current) ? "open" : ""}>
+      <summary><span class="badge ${g.lv}">${LEVEL_NAME[g.lv]}</span><span class="muted">решено ${done} из ${g.items.length}</span></summary>
+      <ul class="tasks">${g.items.map((it, n) => taskItem(it, n === firstLocked)).join("")}</ul>
+    </details>`;
+  };
+  return `<details class="topic" data-key="${key}" ${isOpen(key, openByDefault) ? "open" : ""}>
+    <summary>
+      <header><h2>${esc(c.topic.title)}</h2><span class="muted">решено ${c.solved} из ${c.items.length}</span></header>
+      <p class="muted">${esc(c.topic.description || "")}</p>
+      ${counts ? `<p class="levels-line muted">${counts}</p>` : ""}
+    </summary>
+    ${c.items.length ? groups.map(levelGroup).join("") : '<p class="muted">Задачи скоро появятся.</p>'}
+  </details>`;
+}
 
 function renderCatalog(route) {
   const lang = route.lang;
@@ -160,13 +187,10 @@ function renderCatalog(route) {
         <label>Тема <select id="f-topic">${opt("", "Все", route.topic)}${(topics[lang] || []).map(tp => opt(tp.id, tp.title, route.topic)).join("")}</select></label>
         <label>Сложность <select id="f-level">${opt("", "Все", route.level)}${LEVELS.map(([id, name]) => opt(id, name, route.level)).join("")}</select></label>
       </div>
-      ${cards.length ? cards.map(c => `
-        <article class="topic">
-          <header><h2>${esc(c.topic.title)}</h2><span class="muted">решено ${c.solved} из ${c.items.length}</span></header>
-          <p class="muted">${esc(c.topic.description || "")}</p>
-          ${c.items.length ? `<ul class="tasks">${c.items.map(taskItem).join("")}</ul>` : '<p class="muted">Задачи скоро появятся.</p>'}
-        </article>`).join("") : '<p class="empty">Нет задач с такими фильтрами.</p>'}
+      ${cards.length ? cards.map(c => topicCard(c, lang, route.topic || cards.length === 1)).join("") : '<p class="empty">Нет задач с такими фильтрами.</p>'}
     </section>`;
+  $("main").querySelectorAll("details[data-key]").forEach(d =>
+    d.addEventListener("toggle", () => foldState.set(d.dataset.key, d.open)));
   const apply = () => {
     const q = new URLSearchParams();
     if ($("f-topic").value) q.set("topic", $("f-topic").value);
