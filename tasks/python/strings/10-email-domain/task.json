@@ -1,0 +1,14 @@
+{
+  "title": "Домен из e-mail",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "strip() и lower() сначала",
+    "count('@') и split/partition"
+  ],
+  "mutants": {
+    "first-at": "при нескольких @ берёт часть после первой",
+    "no-lower": "не приводит домен к нижнему регистру",
+    "no-strip": "не срезает пробелы по краям"
+  }
+}
