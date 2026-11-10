@@ -1,0 +1,13 @@
+{
+  "title": "Словарь тестовых записей по id",
+  "level": "easy",
+  "kind": "code",
+  "hints": [
+    "dict comprehension"
+  ],
+  "mutants": {
+    "first-wins": "при повторе id остаётся первая запись",
+    "no-skip-missing": "падает KeyError на записи без поля id",
+    "strips-id": "убирает поле id из сохранённых записей"
+  }
+}

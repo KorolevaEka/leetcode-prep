@@ -1,0 +1,15 @@
+def count_exact_distinct(codes, k):
+    if k <= 0:
+        return 0
+    counts = {}
+    left = 0
+    total = 0
+    for right, c in enumerate(codes):
+        counts[c] = counts.get(c, 0) + 1
+        while len(counts) > k:
+            counts[codes[left]] -= 1
+            if counts[codes[left]] == 0:
+                del counts[codes[left]]
+            left += 1
+        total += right - left + 1
+    return total
