@@ -1,8 +1,9 @@
 import sys
 
+import pytest
+
 _saved = sys.modules.get("difflib")
 sys.modules["difflib"] = None
-import pytest
 from solution import longest_common_chunk
 if _saved is None:
     del sys.modules["difflib"]

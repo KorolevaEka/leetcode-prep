@@ -1,5 +1,17 @@
+import sys
+
 import pytest
+
+_BLOCKED = ["urllib", "urllib.parse", "posixpath"]
+_saved = {m: sys.modules.get(m) for m in _BLOCKED}
+for _m in _BLOCKED:
+    sys.modules[_m] = None
 from solution import resolve_url
+for _m, _mod in _saved.items():
+    if _mod is None:
+        sys.modules.pop(_m, None)
+    else:
+        sys.modules[_m] = _mod
 
 BASE = "https://qa.example.com/app/v1/page.html?x=1#top"
 

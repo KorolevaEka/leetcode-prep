@@ -1,4 +1,4 @@
-def wrap_text(text: str, width: int) -> list[str]:
+def balanced_wrap(text: str, width: int) -> list[str]:
     lines = []
     cur = ""
     for word in text.split():
@@ -9,4 +9,6 @@ def wrap_text(text: str, width: int) -> list[str]:
         else:
             lines.append(cur)
             cur = word
+    if cur:
+        lines.append(cur)
     return lines
