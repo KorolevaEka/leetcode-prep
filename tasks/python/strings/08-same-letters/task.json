@@ -3,8 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "нормализуй обе строки одинаково",
-    "sorted() или Counter для сравнения состава"
+    "sorted()"
   ],
   "mutants": {
     "case-sensitive": "не игнорирует регистр",

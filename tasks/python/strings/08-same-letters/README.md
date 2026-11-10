@@ -7,7 +7,7 @@
 ## Пример
 
 ```
-is_anagram("Dormitory", "dirty room")  ->  True
-is_anagram("aab", "abb")               ->  False
-is_anagram("abc", "abcd")              ->  False
+is_anagram("run_42", "24_NUR")   ->  True
+is_anagram("ui smoke", "MOKESIU") ->  True
+is_anagram("ttest", "tesst")     ->  False
 ```

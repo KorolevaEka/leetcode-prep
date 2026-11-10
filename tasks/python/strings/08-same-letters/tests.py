@@ -3,14 +3,15 @@ from solution import is_anagram
 
 
 @pytest.mark.parametrize("a, b, expected", [
-    ("Dormitory", "dirty room", True),
-    ("aab", "abb", False),
+    ("run_42", "24_NUR", True),
+    ("ui smoke", "MOKESIU", True),
+    ("ttest", "tesst", False),
+    ("pass", "fail", False),
     ("abc", "abcd", False),
     ("", "", True),
     ("   ", "", True),
-    ("Listen", "Silent", True),
     ("aabb", "ab", False),
-    ("abc1", "1cba", True),
+    ("e2e", "ee2", True),
     ("a", "b", False),
 ])
 def test_is_anagram(a, b, expected):

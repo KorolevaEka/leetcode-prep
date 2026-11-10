@@ -3,8 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "сначала отдели имя файла от каталогов",
-    "rpartition или rsplit по точке"
+    "str.rpartition()"
   ],
   "mutants": {
     "whole-path": "ищет точку во всём пути, а не только в имени файла",

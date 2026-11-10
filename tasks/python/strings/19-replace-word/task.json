@@ -3,9 +3,8 @@
   "level": "medium",
   "kind": "code",
   "hints": [
-    "str.replace здесь не подходит: нужна проверка границ слова",
-    "re.escape для искомого текста",
-    "границы можно задать через lookbehind и lookahead"
+    "Что будет с `valid_id`, если просто вызвать replace?",
+    "Что если в old есть точка или скобка?"
   ],
   "mutants": {
     "plain-replace": "использует обычный replace и портит более длинные слова (valid_id)",

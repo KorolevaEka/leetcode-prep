@@ -3,8 +3,7 @@
   "level": "easy",
   "kind": "code",
   "hints": [
-    "replace() для подчёркиваний",
-    "capitalize() делает первую букву заглавной, остальные строчными"
+    "str.replace()"
   ],
   "mutants": {
     "title-case": "делает заглавной первую букву каждого слова (title)",
